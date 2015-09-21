@@ -8,6 +8,7 @@
 
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.122"]
+                 [cljsjs/d3 "3.5.5-3"]
                  [org.omcljs/om "0.9.0"]]  
 
   :plugins [[lein-cljsbuild "1.1.0"]]
