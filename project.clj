@@ -8,8 +8,7 @@
 
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.122"]
-                 [cljsjs/react "0.13.3-1"]
-                 [reagent "0.5.0"]]
+                 [org.omcljs/om "0.9.0"]]  
 
   :plugins [[lein-cljsbuild "1.1.0"]]
 
@@ -27,23 +26,25 @@
 
   :figwheel {:css-dirs ["app/css"]}
 
-  :profiles {:dev {:cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
-                                              :compiler {:source-map true
-                                                         :main       "draft.dev"
-                                                         :verbose true}
-                                              :figwheel {:on-jsload "draft.core/mount-root"}}}}
+  :profiles
+  {:dev {:cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
+                                    :compiler {:source-map true
+                                               :main       "draft.dev"
+                                               :verbose true}
+                                    :figwheel {:on-jsload "draft.core/mount-root"}}}}
 
-                   :plugins [[lein-ancient "0.6.7"]
-                             [lein-kibit "0.1.2"]
-                             [lein-cljfmt "0.3.0"]
-                             [lein-figwheel "0.3.8"]]}
-             :production {:cljsbuild {:builds {:app {:compiler {:optimizations :advanced
-                                                                :main          "draft.prod"
-                                                                :cache-analysis false
-                                                                :closure-defines {:goog.DEBUG false}
-                                                                :externs ["node_modules/closurecompiler-externs/path.js"
-                                                                          "node_modules/closurecompiler-externs/fs.js"
-                                                                          "externs/misc.js"]
-                                                                :pretty-print false}
-                                                     :source-paths ["env/prod/cljs"]}}}}}
-  )
+         :plugins [[lein-ancient "0.6.7"]
+                   [lein-kibit "0.1.2"]
+                   [lein-cljfmt "0.3.0"]
+                   [lein-figwheel "0.3.8"]]}
+   :production
+   {:cljsbuild
+    {:builds {:app {:compiler {:optimizations :advanced
+                               :main          "draft.prod"
+                               :cache-analysis false
+                               :closure-defines {:goog.DEBUG false}
+                               :externs ["node_modules/closurecompiler-externs/path.js"
+                                         "node_modules/closurecompiler-externs/fs.js"
+                                         "externs/misc.js"]
+                               :pretty-print false}
+                    :source-paths ["env/prod/cljs"]}}}}})
