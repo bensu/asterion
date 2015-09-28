@@ -1,9 +1,9 @@
-(ns draft.core
+(ns constable.core
   (:require [clojure.string :as str]
             [cljs.nodejs :as node]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [draft.tree :as tree]
+            [constable.tree :as tree]
             cljsjs.d3))
             
 
@@ -18,7 +18,7 @@
 (def d3 (.-d3 js/window))
 
 (defn draw! [data]
-  (.json d3 "projects/draft.json"
+  (.json d3 "projects/constable.json"
     (fn [json]
       (tree/drawTree "#graph"
         (clj->js

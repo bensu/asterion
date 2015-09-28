@@ -1,4 +1,4 @@
-(defproject draft "0.1.0-alpha1"
+(defproject constable "0.1.0-alpha1"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -8,6 +8,7 @@
 
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.122"]
+                 [org.clojure/tools.namespace "0.3.19-SNAPSHOT"]
                  [cljsjs/d3 "3.5.5-3"]
                  [org.omcljs/om "0.9.0"]]  
 
@@ -30,9 +31,9 @@
   :profiles
   {:dev {:cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
                                     :compiler {:source-map true
-                                               :main       "draft.dev"
+                                               :main       "constable.dev"
                                                :verbose true}
-                                    :figwheel {:on-jsload "draft.core/mount-root"}}}}
+                                    :figwheel {:on-jsload "constable.core/mount-root"}}}}
 
          :plugins [[lein-ancient "0.6.7"]
                    [lein-kibit "0.1.2"]
@@ -41,7 +42,7 @@
    :production
    {:cljsbuild
     {:builds {:app {:compiler {:optimizations :advanced
-                               :main          "draft.prod"
+                               :main          "constable.prod"
                                :cache-analysis false
                                :closure-defines {:goog.DEBUG false}
                                :externs ["node_modules/closurecompiler-externs/path.js"
