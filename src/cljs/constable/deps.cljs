@@ -7,8 +7,9 @@
 
 (defn depgraph [srcs]
   {:pre [(seq? srcs)]}
-  (let [source-fs (apply set/union
-                    (map #(find/find-sources-in-dir % find/cljs) srcs))
+  (let [exts (update find/clj :extensions (partial cons ".cljs"))
+        source-fs (apply set/union
+                    (map #(find/find-sources-in-dir % exts) srcs))
         tracker (file/add-files {} source-fs)
         dep-graph (tracker ::track/deps)
         ns-names (set (map (comp second file/read-file-ns-decl) source-fs))
@@ -21,4 +22,5 @@
         idx (into {} (map-indexed (fn [i n] [n i]) nodes))
         json-nodes (mapv (fn [[n i]] {:name (str n)}) (sort-by second idx))
         json-edges (map (fn [[from to]] {:source from :target to}) edges)]
+    (println json-nodes)
     {:edges json-edges :nodes json-nodes}))

@@ -4,27 +4,29 @@
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [constable.tree :as tree]
+            [constable.deps :as deps]
             cljsjs.d3))
             
 
 (enable-console-print!)
 
+(def depgraph (deps/depgraph '("/home/carlos/Komunike/login/src")))
+
 (defonce app-state (atom {:ns ""
                           :highlight ""
-                          :files []}))
+                          :files []
+                          :graph depgraph}))
 
 (def fs (node/require "fs"))
 
 (def d3 (.-d3 js/window))
 
 (defn draw! [data]
-  (.json d3 "projects/constable.json"
-    (fn [json]
-      (tree/drawTree "#graph"
-        (clj->js
-          {:ns (str/split (:ns data) " ")
-           :highlight (str/split (:highlight data) " ")})
-        json))))
+  (tree/drawTree "#graph"
+    (clj->js
+      {:ns (str/split (:ns data) " ")
+       :highlight (str/split (:highlight data) " ")})
+    (clj->js (:graph data))))
 
 (defn main [data owner]
   (reify
