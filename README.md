@@ -1,5 +1,8 @@
 
-# draft
+# Constable
+
+NOTE: do not use this! It is under development and has dependencies
+that have not been published.
 
 ## Requirements
 
