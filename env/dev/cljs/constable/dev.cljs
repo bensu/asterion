@@ -1,4 +1,4 @@
-(ns ^:figwheel-no-load constable.dev
+(ns constable.dev
   (:require [constable.core :as core]))
 
 (core/init!)

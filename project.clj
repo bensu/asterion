@@ -31,9 +31,9 @@
   :profiles
   {:dev {:cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
                                     :compiler {:source-map true
-                                               :main       "constable.dev"
+                                               :main "constable.dev"
                                                :verbose true}
-                                    :figwheel {:on-jsload "constable.core/mount-root"}}}}
+                                    :figwheel {:on-jsload "constable.core/init!"}}}}
 
          :plugins [[lein-ancient "0.6.7"]
                    [lein-kibit "0.1.2"]

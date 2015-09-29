@@ -4,8 +4,8 @@ goog.require('cljsjs.d3');
 goog.require('constable.search');
 
 constable.tree.config = {w: 1600, h: 1200,
-                    rx: 60, ry: 30,
-                    fill: d3.scale.category20()};
+                         rx: 60, ry: 30,
+                         fill: d3.scale.category20()};
 
 constable.tree.force = d3.layout.force()
     .charge(-900)
