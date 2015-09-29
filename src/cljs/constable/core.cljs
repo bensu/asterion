@@ -65,9 +65,8 @@
                                      (map :name)
                                      (map (partial deps/join-paths (:root (:dir data)))))
                               graph (deps/depgraph srcs)]
-                          (om/update! data :srcs srcs)
-                          (om/update! data :graph graph)
-                          (om/set-state! owner :draw? true)))}
+                          (om/transact! data
+                            #(assoc % :srcs srcs :graph graph :draw? true))))}
         "Explore!"))))
 
 ;; TODO: should show a loader
@@ -76,33 +75,34 @@
     om/IRender
     (render [_]
       (dom/div nil
-        (dom/span #js {:className "controls"}
-          "filter ns: "
-          (dom/input #js {:type "text"
-                          :value (:ns data)
-                          :onKeyDown (fn [e]
-                                       (when (= "Enter" (.-key e))
-                                         (draw! data)))
-                          :onChange (fn [e]
-                                      (om/update! data :ns
-                                        (.. e -target -value)))}))
-        (dom/br #js {})
-        (dom/span #js {:className "controls"}
-          "highlight ns: "
-          (dom/input #js {:type "text"
-                          :value (:highlight data)
-                          :onKeyDown (fn [e]
-                                       (when (= "Enter" (.-key e))
-                                         (draw! data)))
-                          :onChange (fn [e]
-                                      (om/update! data :highlight
-                                        (.. e -target -value)))}))
+        (dom/div nil
+          (dom/span #js {:className "controls"}
+            "filter ns: "
+            (dom/input #js {:type "text"
+                            :value (:ns data)
+                            :onKeyDown (fn [e]
+                                         (when (= "Enter" (.-key e))
+                                           (draw! data)))
+                            :onChange (fn [e]
+                                        (om/update! data :ns
+                                          (.. e -target -value)))}))
+          (dom/br #js {})
+          (dom/span #js {:className "controls"}
+            "highlight ns: "
+            (dom/input #js {:type "text"
+                            :value (:highlight data)
+                            :onKeyDown (fn [e]
+                                         (when (= "Enter" (.-key e))
+                                           (draw! data)))
+                            :onChange (fn [e]
+                                        (om/update! data :highlight
+                                          (.. e -target -value)))})))
         (dom/svg #js {:id "graph"}
           (dom/g #js {}))))
     om/IDidUpdate
     (did-update [_ pp ps]
-      (when (:draw? ps)
-        (om/set-state! owner :draw? false)
+      (when (and (not (empty? (:graph pp))) (:draw? pp))
+        (om/update! data :draw? false)
         (draw! pp)))))
 
 ;; TODO: should be a multimethod
