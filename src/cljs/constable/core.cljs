@@ -14,7 +14,7 @@
 
 (defonce app-state (atom {:ns ""
                           :highlight ""
-                          :files []
+                          :dir nil 
                           :graph depgraph}))
 
 (def fs (node/require "fs"))
@@ -60,18 +60,5 @@
     (did-mount [_]
       (draw! data))))
 
-(defn main-page [data owner]
-  (om/component
-    (dom/div nil
-      (if (empty? (:files data))
-        (dom/h1 nil "Loading...")
-        (apply dom/ul nil
-          (map (partial dom/li nil) (:files data)))))))
-
-(defn mount! []
+(defn init! []
   (om/root main app-state {:target  (.getElementById js/document "app")}))
-
-(fs.readdir "/"
-  (fn [error files]
-    (swap! app-state assoc :files (js->clj files))
-    (mount!)))
