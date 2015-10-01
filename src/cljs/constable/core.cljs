@@ -13,7 +13,6 @@
                           :root "" 
                           :srcs #{} 
                           :graph {}
-                          :project ""
                           :platform :clj}))
 
 (defn draw! [data]
@@ -81,7 +80,8 @@
                               path (deps/file->folder f)]
                           (try
                             (let [srcs (->> (project/parse (deps/read-file f))
-                                         (map (partial deps/join-paths path)))
+                                         (map (partial deps/join-paths path))
+                                         set)
                                   graph (try
                                           (make-graph (:platform data) srcs)
                                           (catch js/Object e
@@ -109,7 +109,8 @@
                         (let [srcs (or (:srcs data)
                                        (->> (:ls data)
                                             (filter :selected?)
-                                            (map :name)))
+                                            (map :name)
+                                            set))
                               graph (make-graph (:platform data) srcs)]
                           (om/transact! data
                             #(assoc % :graph graph :srcs srcs))))}
