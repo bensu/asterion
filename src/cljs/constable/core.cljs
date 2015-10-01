@@ -22,15 +22,7 @@
        :highlight (str/split (:highlight data) " ")})
     (clj->js (:graph data))))
 
-(defn dir-item [item owner]
-  (om/component
-    (dom/li nil
-      (dom/span nil
-        (dom/input #js {:type "checkbox"
-                        :checked (:selected? item)
-                        :onClick (fn [e]
-                                   (om/transact! item :selected? not))})
-        (deps/file-name (:name item))))))
+
 
 (defn radio [name f {:keys [value label]}]
   (dom/span nil
@@ -89,32 +81,48 @@
                               (om/transact! data 
                                 #(assoc % :root path :srcs srcs :graph graph)))
                             (catch js/Object _
-                              (om/transact! data
-                                #(assoc %
-                                   :root path
-                                   :ls (->> (deps/list-dirs path)
-                                         (mapv (fn [f]
-                                                 {:name f
-                                                  :selected? false})))))))))}))))
+                              (om/update! data :root path)))))}))))
+
+(defn dir-item [item owner {:keys [click-fn]}]
+  (om/component
+    (dom/li nil
+      (dom/span nil
+        (dom/input #js {:type "checkbox"
+                        :checked (:selected? item)
+                        :onClick click-fn})
+        (deps/file-name (:name item))))))
 
 (defn explorer [data owner]
-  (om/component
-    (dom/div nil
-      (dom/p nil "We couldn't parse your project.clj Would you choosing the folders?")
-      (dom/p nil (:root data))
-      (apply dom/ul nil
-        (om/build-all dir-item (:ls data)))
-      (dom/button
-        #js {:onClick (fn [_]
-                        (let [srcs (or (:srcs data)
-                                       (->> (:ls data)
-                                            (filter :selected?)
-                                            (map :name)
-                                            set))
-                              graph (make-graph (:platform data) srcs)]
-                          (om/transact! data
-                            #(assoc % :graph graph :srcs srcs))))}
-        "Explore!"))))
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:ls (->> (deps/list-dirs (:root data))
+             (mapv (fn [f]
+                     {:name f
+                      :selected? false})))})
+    om/IRenderState
+    (render-state [_ {:keys [ls]}]
+      (dom/div nil
+        (dom/p nil "We couldn't parse your project.clj Would you choosing the folders?")
+        (dom/p nil (:root data))
+        (apply dom/ul nil
+          (map-indexed 
+            (fn [i dir]
+              (om/build dir-item dir
+                {:opts {:click-fn (fn [_]
+                                    (om/update-state! owner [:ls i :selected?]
+                                      not))}}))
+            ls))
+        (dom/button
+          #js {:onClick (fn [_]
+                          (let [srcs (->> (om/get-state owner :ls) 
+                                       (filter :selected?)
+                                       (map :name)
+                                       set)
+                                graph (make-graph (:platform data) srcs)]
+                            (om/transact! data
+                              #(assoc % :graph graph :srcs srcs))))}
+          "Explore!")))))
 
 ;; TODO: should show a loader
 (defn graph [data owner]
