@@ -9,6 +9,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.122"]
                  [org.clojure/tools.namespace "0.3.19-SNAPSHOT"]
+                 [org.clojure/tools.reader "0.10.0-alpha1"]
                  [cljsjs/d3 "3.5.5-3"]
                  [org.omcljs/om "0.9.0"]]  
 
