@@ -15,43 +15,8 @@
                           :graph {}
                           :platform :clj}))
 
-;; TODO: handle no graph 
-(defn draw! [data]
-  (tree/drawTree "#graph"
-    (clj->js
-      {:ns (str/split (:ns data) " ")
-       :highlight (str/split (:highlight data) " ")})
-    (clj->js (:graph data))))
-
-(defn radio [name f {:keys [value label]}]
-  (dom/span nil
-    (dom/input #js {:id value :type "radio" :name name
-                    :value value :onChange (f value)})
-    (dom/label #js {:htmlFor value} (or label value))))
-
-(defn radios [{:keys [platform items] :as data} owner]
-  (om/component
-    (apply dom/ul nil
-      (interleave
-        (map (partial radio "platform"
-               (fn [item-value]
-                 (fn [_]
-                   (om/update! data :platform (keyword item-value)))))
-          items)
-        (map (fn [_] (dom/br nil nil)) (range (count items)))))))
-
-(defn e->file [e]
-  (aget (or (.. e -target -files)
-            (.. e -target -value)
-            (.. e -dataTransfer -files))
-    0))
-
-(defn platform [data owner]
-  (om/component
-    (dom/div nil
-      (om/build radios (assoc data 
-                         :items (mapv (partial hash-map :value)
-                                      ["clj" "cljs" "cljc"]))))))
+;; ====================================================================== 
+;; Update
 
 (defn make-graph [platform srcs]
   (if (some? platform)
@@ -77,6 +42,8 @@
           (assoc data :root path))))
 
     :project/clear (dissoc data :root :srcs :ls)
+    
+    :project/platform (assoc data :platform msg)
 
     :nav/ns (assoc data :ns msg)
     
@@ -85,6 +52,47 @@
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
   (om/transact! data (partial update-state [tag msg])))
+
+;; ====================================================================== 
+;; Components
+
+;; TODO: handle no graph - validation 
+(defn draw! [data]
+  (tree/drawTree "#graph"
+    (clj->js
+      {:ns (str/split (:ns data) " ")
+       :highlight (str/split (:highlight data) " ")})
+    (clj->js (:graph data))))
+
+(defn radio [name f {:keys [value label]}]
+  (dom/span nil
+    (dom/input #js {:id value :type "radio" :name name
+                    :value value :onChange (f value)})
+    (dom/label #js {:htmlFor value} (or label value))))
+
+(defn radios [{:keys [platform items] :as data} owner]
+  (om/component
+    (apply dom/ul nil
+      (interleave
+        (map (partial radio "platform"
+               (fn [item-value]
+                 (fn [_]
+                   (raise! data :project/platform (keyword item-value)))))
+          items)
+        (map (fn [_] (dom/br nil nil)) (range (count items)))))))
+
+(defn e->file [e]
+  (aget (or (.. e -target -files)
+            (.. e -target -value)
+            (.. e -dataTransfer -files))
+    0))
+
+(defn platform [data owner]
+  (om/component
+    (dom/div nil
+      (om/build radios (assoc data 
+                         :items (mapv (partial hash-map :value)
+                                      ["clj" "cljs" "cljc"]))))))
 
 (defn select-project [data owner]
   (om/component
@@ -191,4 +199,4 @@
         (om/build graph data)))))
 
 (defn init! []
-  (om/root main app-state {:target  (.getElementById js/document "app")}))
+  (om/root main app-state {:target (.getElementById js/document "app")}))
