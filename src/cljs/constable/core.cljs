@@ -15,14 +15,13 @@
                           :graph {}
                           :platform :clj}))
 
+;; TODO: handle no graph 
 (defn draw! [data]
   (tree/drawTree "#graph"
     (clj->js
       {:ns (str/split (:ns data) " ")
        :highlight (str/split (:highlight data) " ")})
     (clj->js (:graph data))))
-
-
 
 (defn radio [name f {:keys [value label]}]
   (dom/span nil
@@ -59,6 +58,34 @@
     (deps/depgraph platform srcs)
     (deps/depgraph srcs)))
 
+(defn update-state [[tag msg] data]
+  (case tag
+    :project/start
+    (let [srcs (:srcs msg)
+          graph (make-graph (:platform data) srcs)]
+      (assoc data :graph graph :srcs srcs))
+
+    :project/add
+    (let [f (:f msg)
+          path (deps/file->folder f)] 
+      (try
+        (let [srcs (->> (project/parse (deps/read-file f))
+                     (map (partial deps/join-paths path))
+                     set)]
+          (update-state [:project/start {:srcs srcs}] (assoc data :root path)))
+        (catch js/Object _
+          (assoc data :root path))))
+
+    :project/clear (dissoc data :root :srcs :ls)
+
+    :nav/ns (assoc data :ns msg)
+    
+    :nav/highlight (assoc data :highlight msg)))
+
+(defn raise! [data tag msg]
+  {:pre [(keyword? tag) (om/cursor? data)]}
+  (om/transact! data (partial update-state [tag msg])))
+
 (defn select-project [data owner]
   (om/component
     (dom/div nil
@@ -68,20 +95,7 @@
                       :onChange
                       (fn [e]
                         (.preventDefault e)
-                        (let [f (.-path (e->file e)) 
-                              path (deps/file->folder f)]
-                          (try
-                            (let [srcs (->> (project/parse (deps/read-file f))
-                                         (map (partial deps/join-paths path))
-                                         set)
-                                  graph (try
-                                          (make-graph (:platform data) srcs)
-                                          (catch js/Object e
-                                            (.log js/console e)))]
-                              (om/transact! data 
-                                #(assoc % :root path :srcs srcs :graph graph)))
-                            (catch js/Object _
-                              (om/update! data :root path)))))}))))
+                        (raise! data :project/add {:f (.-path (e->file e))}))}))))
 
 (defn dir-item [item owner {:keys [click-fn]}]
   (om/component
@@ -92,14 +106,18 @@
                         :onClick click-fn})
         (deps/file-name (:name item))))))
 
+(defn ls->srcs [ls]
+  (->> ls 
+    (filter :selected?)
+    (map :name)
+    set))
+
 (defn explorer [data owner]
   (reify
     om/IInitState
     (init-state [_]
       {:ls (->> (deps/list-dirs (:root data))
-             (mapv (fn [f]
-                     {:name f
-                      :selected? false})))})
+             (mapv (fn [f] {:name f :selected? false})))})
     om/IRenderState
     (render-state [_ {:keys [ls]}]
       (dom/div nil
@@ -110,18 +128,13 @@
             (fn [i dir]
               (om/build dir-item dir
                 {:opts {:click-fn (fn [_]
-                                    (om/update-state! owner [:ls i :selected?]
-                                      not))}}))
+                                    (om/update-state! owner
+                                      [:ls i :selected?] not))}}))
             ls))
         (dom/button
           #js {:onClick (fn [_]
-                          (let [srcs (->> (om/get-state owner :ls) 
-                                       (filter :selected?)
-                                       (map :name)
-                                       set)
-                                graph (make-graph (:platform data) srcs)]
-                            (om/transact! data
-                              #(assoc % :graph graph :srcs srcs))))}
+                          (raise! data :project/start
+                            {:srcs (ls->srcs (om/get-state owner :ls))}))}
           "Explore!")))))
 
 ;; TODO: should show a loader
@@ -139,7 +152,7 @@
                                          (when (= "Enter" (.-key e))
                                            (draw! data)))
                             :onChange (fn [e]
-                                        (om/update! data :ns
+                                        (raise! data :nav/ns
                                           (.. e -target -value)))}))
           (dom/br #js {})
           (dom/span #js {:className "controls"}
@@ -150,7 +163,7 @@
                                          (when (= "Enter" (.-key e))
                                            (draw! data)))
                             :onChange (fn [e]
-                                        (om/update! data :highlight
+                                        (raise! data :nav/highlight
                                           (.. e -target -value)))})))
         (dom/svg #js {:id "graph"}
           (dom/g #js {}))))
@@ -159,17 +172,14 @@
       (when (and (not (empty? (:graph @data))))
         (draw! @data)))))
 
-(defn clear! [data]
-  (om/transact! data #(dissoc % :root :srcs :ls)))
+
 
 ;; TODO: should be a multimethod
 (defn main [data owner]
   (om/component
     (dom/div nil
       (dom/h1 nil "Constable")
-      (dom/button #js {:onClick (fn [_]
-                                  (clear! data))}
-        "X")
+      (dom/button #js {:onClick (fn [_] (raise! data :project/clear nil))} "X")
       (cond
         (empty? (:root data))
         (om/build select-project data)
