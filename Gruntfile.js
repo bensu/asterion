@@ -43,6 +43,29 @@ shellconfig.fatal = false;   // stop if cmd failed?
 
 
 grunt.initConfig({
+ 
+  less: {
+    options: {
+      compress: true
+    },
+    
+    default: {
+      files: {
+        'app/css/main.min.css': 'less/main.less'
+      }
+    }
+  },
+    
+  watch: {
+    options: {
+      atBegin: true
+    },
+   
+    less: {
+      files: "less/*.less",
+      tasks: "less:default"
+    }
+  },
 
   'download-electron': {
     version: '0.31.0',
@@ -56,6 +79,8 @@ grunt.initConfig({
 //------------------------------------------------------------------------------
 
 
+grunt.loadNpmTasks('grunt-contrib-less');
+grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-download-electron');
 if (os === "mac") {
   grunt.loadNpmTasks('grunt-appdmg');

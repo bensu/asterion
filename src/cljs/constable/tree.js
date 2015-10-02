@@ -12,10 +12,11 @@ constable.tree.force = d3.layout.force()
     .linkDistance(150)
     .size([constable.tree.config.w, constable.tree.config.h]);
 
+// TODO: svg should take the whole background
 constable.tree.svg = function(nodeId) {
-    return d3.select(nodeId)
-                .attr("width", constable.tree.config.w)
-        	.attr("height", constable.tree.config.h);
+    return d3.select(nodeId);
+                // .attr("width", constable.tree.config.w)
+        	// .attr("height", constable.tree.config.h);
 };
 
 constable.tree.formatNs = function(s) {

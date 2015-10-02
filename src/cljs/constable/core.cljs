@@ -185,9 +185,9 @@
 ;; TODO: should be a multimethod
 (defn main [data owner]
   (om/component
-    (dom/div nil
-      (dom/h1 nil "Constable")
-      (dom/button #js {:onClick (fn [_] (raise! data :project/clear nil))} "X")
+    (dom/div #js {:className "center"} 
+      (dom/button #js {:className "clear-btn"
+                       :onClick (fn [_] (raise! data :project/clear nil))} "X")
       (cond
         (empty? (:root data))
         (om/build select-project data)
