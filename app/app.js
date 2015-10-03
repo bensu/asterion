@@ -105,7 +105,7 @@ const projectDialogOpts = {
   filters: [
     {
       name: 'Leiningen project.clj',
-      extensions: ['clj']
+      extensions: ['boot', 'xml', 'clj']
     }
   ]
 };
