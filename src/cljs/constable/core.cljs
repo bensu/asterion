@@ -147,8 +147,6 @@
     (map :name)
     set))
 
-;; i.fa.fa-times.project-icon-1711d
-
 (defn clear-button [data owner]
   (om/component
     (dom/i #js {:className "fa fa-times clear-btn float-right-corner"
