@@ -1,4 +1,5 @@
 (ns constable.core
+  (:import [goog.ui IdGenerator])
   (:require [clojure.string :as str]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
@@ -9,6 +10,14 @@
 (enable-console-print!)
 
 (def ipc (js/require "ipc"))
+
+;; ====================================================================== 
+;; Util
+
+(def id-generator (IdGenerator.))
+
+(defn new-id []
+  (.getNextUniqueId id-generator))
 
 ;; ====================================================================== 
 ;; Model
@@ -122,12 +131,15 @@
 (defn dir-item [item owner {:keys [click-fn]}]
   (om/component
     (dom/li nil
-      (dom/span nil
-        (dom/input #js {:className "folder-list__item"
-                        :type "checkbox"
-                        :checked (:selected? item)
-                        :onClick click-fn})
-        (deps/file-name (:name item))))))
+      (let [id (new-id)
+            label (deps/file-name (:name item))]
+        (dom/span nil
+          (dom/input #js {:id id 
+                          :className "folder-list__item"
+                          :type "checkbox"
+                          :checked (:selected? item)
+                          :onClick click-fn})
+          (dom/label #js {:htmlFor id} label))))))
 
 (defn ls->srcs [ls]
   (->> ls 
@@ -219,7 +231,7 @@
           (dom/g #js {}))))
     om/IDidMount
     (did-mount [_]
-      (when (and (not (empty? (:graph @data))))
+      (when-not (empty? (:graph @data))
         (draw! @data)))))
 
 ;; TODO: should be a multimethod
