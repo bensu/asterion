@@ -19,9 +19,10 @@ html, body {
 }
 
 .nav {
-    width: 190px;
+    width: 230px;
     position: fixed;
     margin-left: 20px;
+    margin-top: 20px;
 }
 
 .center {
@@ -40,13 +41,18 @@ html, body {
 }
 
 .box {
+    padding: 10px 10px 10px 10px;
     border-radius: 3px;
 }
 
 .float-box {
     .box;
     position: relative;
-    padding: 10px 10px 10px 10px;
+}
+
+.float-box--side {
+    .box;
+    position: absolute;
 }
 
 // Style
@@ -62,7 +68,7 @@ html, body {
     border: 0;
     outline: 0;
     border-bottom: 1px solid @whiteGhost;
-    width: 200px;
+    width: 180px;
     .blue-box;
 }
 

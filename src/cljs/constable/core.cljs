@@ -106,12 +106,6 @@
           items)
         (map (fn [_] (dom/br nil nil)) (range (count items)))))))
 
-(defn e->file [e]
-  (aget (or (.. e -target -files)
-            (.. e -target -value)
-            (.. e -dataTransfer -files))
-    0))
-
 (defn platform [data owner]
   (om/component
     (dom/div #js {:className "platform--toggle"} 
@@ -149,7 +143,7 @@
 
 (defn clear-button [data owner]
   (om/component
-    (dom/i #js {:className "fa fa-times clear-btn float-right-corner"
+    (dom/i #js {:className "fa fa-reply clear-btn float-right-corner"
                 :title "Clear Project"
                 :onClick (fn [_] (raise! data :project/clear nil))})))
 
@@ -201,7 +195,7 @@
 
 (defn nav [data owner]
   (om/component
-    (dom/div #js {:className "float-box blue-box nav"} 
+    (dom/div #js {:className "float-box--side blue-box nav"} 
       (dom/h3 #js {:className "project-name"}
         (if-not (empty? (:name data))
           (:name data)
