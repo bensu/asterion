@@ -126,15 +126,13 @@ ipc.on('request-project-dialog', addProjectDialog);
 // grep files
 
 function grepWithFork(event, filenames, stringPattern) {
-    console.log(filenames);
     var cmd = "egrep -Rl -m 100 '"
                + stringPattern
                + "' "
                + filenames.join(" ");
-    console.log(cmd);
     child_process.exec(cmd, {maxBuffer: 200000000}, function(err, stdout) {
         if (err) {
-            console.log("There was an error");
+            console.log("There was an error:\n");
             process.stdout.write(stdout);
             mainWindow.webContents.send('search-error',err);
         } else {
