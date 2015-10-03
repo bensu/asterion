@@ -27,6 +27,10 @@ constable.tree.nodeToGroup = function(name) {
     return name.split("\.")[0];
 };
 
+Array.prototype.contains = function(element) {
+    return this.indexOf(element) > -1;
+};
+
 constable.tree.Graph = function(nsOpts, json) {
    var removeNs = nsOpts.ns;
    var shouldKeep = function (name) {
@@ -41,7 +45,7 @@ constable.tree.Graph = function(nsOpts, json) {
     
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
 
-   var highlightNs = nsOpts.highlight;
+   var highlightNs = nsOpts.highlighted;
 
    var allColors = constable.tree.colors.slice(0);
    var nodeColors = {};
@@ -59,7 +63,7 @@ constable.tree.Graph = function(nsOpts, json) {
 
           var hgStyle = "";
           var labelStyle = "";
-          if (constable.search.isSearched(highlightNs, node.name)) {
+          if (highlightNs && (highlightNs.contains(node.name))) {
               labelStyle = "fill:#f0f1eb";
               hgStyle = "fill:black;";
           } 

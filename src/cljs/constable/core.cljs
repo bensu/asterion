@@ -33,6 +33,7 @@
 
 (def init-state {:ns ""
                  :highlight ""
+                 :highlighted #{}
                  :graph {}
                  :root "" 
                  :name ""
@@ -93,7 +94,7 @@
   (tree/drawTree "#graph"
     (clj->js
       {:ns (str/split (:ns data) " ")
-       :highlight (str/split (:highlight data) " ")})
+       :highlighted (:highlighted data)})
     (clj->js (:graph data))))
 
 (defn button [platform f {:keys [value label] :as item}]
@@ -208,7 +209,7 @@
                     :value (get data value-key)
                     :onKeyDown (fn [e]
                                  (when (= "Enter" (.-key e))
-                                   (on-enter)))
+                                   (on-enter e)))
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
@@ -221,10 +222,13 @@
     (will-mount [_]
       (register! "search-success"
         (fn [fs]
-          (println
-            (->> (js->clj fs)
-              (remove empty?)
-              (map file->ns-name))))))
+          (let [new-data (assoc @data :highlighted
+                           (->> (js->clj fs)
+                             (remove empty?)
+                             (map file->ns-name)
+                             set))]
+            (om/update! data new-data)
+            (draw! new-data)))))
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
@@ -235,17 +239,22 @@
         (om/build clear-button data)
         (om/build nav-input data
           {:opts {:on-change (partial raise! data :nav/ns)
-                  :on-enter (fn [] (draw! data))
+                  :on-enter (fn [_] (draw! data))
                   :value-key :ns
                   :placeholder "filter ns"}})
         (om/build nav-input data
           {:opts {:on-change (partial raise! data :nav/highlight)
-                  :on-enter (fn []
-                              (.send ipc "request-search"
-                                (clj->js (vec (:srcs data)))
-                                (:highlight data))
-                              (draw! data))
-                  :value-key :highlight 
+                  :on-enter (fn [e]
+                              (let [v (.. e -target -value)]
+                                (if (empty? v)
+                                  (do
+                                    (om/update! data :highlighted #{})
+                                    (draw! (assoc data :highlighted #{})))
+                                  (do
+                                    (.send ipc "request-search"
+                                      (clj->js (vec (:srcs data)))
+                                      (:highlight data))))))
+                  :value-key :highlight
                   :placeholder "highlight ns"}})))))
 
 ;; TODO: should show a loader
