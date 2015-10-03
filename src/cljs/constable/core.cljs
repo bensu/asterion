@@ -95,16 +95,17 @@
 (defn buttons [{:keys [platform items] :as data} owner]
   (om/component
     (apply dom/div #js {:className "platform--btns"} 
-      (interleave
-        (map (partial button platform 
-               (fn [item _]
-                 (.on ipc "add-project-success"
-                   (fn [filename]
-                     (raise! data :project/add {:platform (:value item)
-                                                :file filename})))
-                 (.send ipc "request-project-dialog")))
-          items)
-        (map (fn [_] (dom/br nil nil)) (range (count items)))))))
+      (butlast
+        (interleave
+          (map (partial button platform 
+                 (fn [item _]
+                   (.on ipc "add-project-success"
+                     (fn [filename]
+                       (raise! data :project/add {:platform (:value item)
+                                                  :file filename})))
+                   (.send ipc "request-project-dialog")))
+            items)
+          (map (fn [_] (dom/br nil nil)) (range (count items))))))))
 
 (defn platform [data owner]
   (om/component
@@ -118,8 +119,8 @@
   (om/component
     (dom/div #js {:className "center-container"}
       (dom/div #js {:className "float-box blue-box center"}
-        (dom/h2 nil "Constable")
-        (dom/p nil "Open your project.clj for:")
+        (dom/h2 #js {:className "blue-box__title"} "Constable")
+        (dom/p nil "Open your pom.xml/project.clj for:")
         (om/build platform data)))))
 
 (defn dir-item [item owner {:keys [click-fn]}]
@@ -164,8 +165,11 @@
         (dom/div #js {:className "float-box blue-box center"}
           (om/build clear-button data)
           (dom/h3 #js {:className "blue-box__title"} "Yikes!")
-          (dom/p nil "We couldn't read your project.clj. Would you mind selecting the source folders?")
-          (dom/p nil (:root data))
+          (dom/p nil "We couldn't read your pom.xml/project.clj")
+          (dom/p nil "Would you mind selecting the source folders?")
+          (if (empty? (:name data))
+            (dom/strong nil (:root data))
+            (dom/h3 #js {:className "blue-box__title"} (:name data)))
           (apply dom/ul #js {:className "folder-list"} 
             (map-indexed 
               (fn [i dir]
@@ -174,12 +178,13 @@
                                       (om/update-state! owner
                                         [:ls i :selected?] not))}}))
               ls))
-          (dom/div
-            #js {:className "btn--green btn-center"
-                 :onClick (fn [_]
-                            (raise! data :project/start
-                              {:srcs (ls->srcs (om/get-state owner :ls))}))}
-            "Explore!"))))))
+          (dom/div #js {:className "btn-container--center"} 
+            (dom/div
+              #js {:className "btn--green btn-center"
+                   :onClick (fn [_]
+                              (raise! data :project/start
+                                {:srcs (ls->srcs (om/get-state owner :ls))}))}
+              "Explore")))))))
 
 (defn nav-input [data owner {:keys [on-change value-key placeholder]}]
   (om/component
