@@ -6,6 +6,7 @@ var app = require('app'),
     path = require('path'),
     dialog = require('dialog'),
     shell = require('shell'),
+    child_process = require('child_process'),
     packageJson = require(__dirname + '/package.json');
 
 // Report crashes to atom-shell.
@@ -99,6 +100,7 @@ const browserWindowOptions = {
 // Register IPC Calls from the Renderers
 //------------------------------------------------------------------------------
 
+// Open files
 const projectDialogOpts = { 
   title: 'Please select an existing project.clj file',
   properties: ['openFile'],
@@ -112,7 +114,6 @@ const projectDialogOpts = {
 
 function addProjectDialog() {
   dialog.showOpenDialog(projectDialogOpts, function(filenames) {
-    console.log(filenames);
     if (filenames) {
       var filename = filenames[0];
       mainWindow.webContents.send('add-project-success', filename);
@@ -121,6 +122,28 @@ function addProjectDialog() {
 }
 
 ipc.on('request-project-dialog', addProjectDialog);
+
+// grep files
+
+function grepWithFork(event, filenames, stringPattern) {
+    console.log(filenames);
+    var cmd = "egrep -Rl -m 100 '"
+               + stringPattern
+               + "' "
+               + filenames.join(" ");
+    console.log(cmd);
+    child_process.exec(cmd, {maxBuffer: 200000000}, function(err, stdout) {
+        if (err) {
+            console.log("There was an error");
+            process.stdout.write(stdout);
+            mainWindow.webContents.send('search-error',err);
+        } else {
+            mainWindow.webContents.send('search-success',stdout.split(/\n/));
+        }
+    });
+}
+
+ipc.on('request-search', grepWithFork);
 
 //------------------------------------------------------------------------------
 // Ready

@@ -5,6 +5,7 @@
             [om.dom :as dom :include-macros true]
             [constable.tree :as tree]
             [constable.deps :as deps]
+            [constable.search :as search]
             [constable.project :as project]))
 
 (enable-console-print!)
@@ -186,7 +187,8 @@
                                 {:srcs (ls->srcs (om/get-state owner :ls))}))}
               "Explore")))))))
 
-(defn nav-input [data owner {:keys [on-change value-key placeholder]}]
+(defn nav-input [data owner {:keys [value-key placeholder
+                                    on-change on-enter]}]
   (om/component
     (dom/input #js {:className "blue-input"
                     :type "text"
@@ -194,7 +196,7 @@
                     :value (get data value-key)
                     :onKeyDown (fn [e]
                                  (when (= "Enter" (.-key e))
-                                   (draw! data)))
+                                   (on-enter)))
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
@@ -208,10 +210,19 @@
       (om/build clear-button data)
       (om/build nav-input data
         {:opts {:on-change (partial raise! data :nav/ns)
+                :on-enter (fn [] (draw! data))
                 :value-key :ns
                 :placeholder "filter ns"}})
       (om/build nav-input data
         {:opts {:on-change (partial raise! data :nav/highlight)
+                :on-enter (fn []
+                            (.on ipc "search-success"
+                              (fn [fs]
+                                (.log js/console fs)))
+                            (.send ipc "request-search"
+                              (clj->js (vec (:srcs data)))
+                              (:highlight data))
+                            (draw! data))
                 :value-key :highlight 
                 :placeholder "highlight ns"}}))))
 
