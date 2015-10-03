@@ -1,12 +1,51 @@
-#app {
+.center-container {
     height: 100vh; 
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+.page {
+    height: inherit;
+}
+
+.nav {
+    width: 190px;
+    position: fixed;
+    margin-left: 20px;
+}
+
 .center {
     flex: none;
     max-width: 50%;
+}
+
+.float-right-corner {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.project-name {
+    margin-top: 0px;
+}
+
+.float-box {
+    padding: 10px 10px 10px 10px;
     border: 3px solid black;
+}
+
+
+// Style
+
+.clear-btn {
+    cursor: pointer;
+    margin-left: 8px;
+    color: #888;
+}
+
+.clear-btn:hover {
+    color: @activeBlue;
+    text-decoration: none;
+    font-size: 16px;
 }

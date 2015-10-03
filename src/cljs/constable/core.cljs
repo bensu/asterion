@@ -96,14 +96,15 @@
 
 (defn select-project [data owner]
   (om/component
-    (dom/div nil
-      (dom/h1 nil "Select your project folder!")
-      (om/build platform data)
-      (dom/input #js {:type "file"
-                      :onChange
-                      (fn [e]
-                        (.preventDefault e)
-                        (raise! data :project/add {:f (.-path (e->file e))}))}))))
+    (dom/div #js {:className "center-container"}
+      (dom/div #js {:className "float-box center"}
+        (dom/h1 nil "Constable")
+        (om/build platform data)
+        (dom/input #js {:type "file"
+                        :onChange
+                        (fn [e]
+                          (.preventDefault e)
+                          (raise! data :project/add {:f (.-path (e->file e))}))})))))
 
 (defn dir-item [item owner {:keys [click-fn]}]
   (om/component
@@ -120,6 +121,14 @@
     (map :name)
     set))
 
+;; i.fa.fa-times.project-icon-1711d
+
+(defn clear-button [data owner]
+  (om/component
+    (dom/i #js {:className "fa fa-times clear-btn float-right-corner"
+                :title "Clear Project"
+                :onClick (fn [_] (raise! data :project/clear nil))})))
+
 (defn explorer [data owner]
   (reify
     om/IInitState
@@ -128,7 +137,8 @@
              (mapv (fn [f] {:name f :selected? false})))})
     om/IRenderState
     (render-state [_ {:keys [ls]}]
-      (dom/div nil
+      (dom/div #js {:className "center"}
+        (om/build clear-button data)
         (dom/p nil "We couldn't parse your project.clj Would you choosing the folders?")
         (dom/p nil (:root data))
         (apply dom/ul nil
@@ -145,34 +155,40 @@
                             {:srcs (ls->srcs (om/get-state owner :ls))}))}
           "Explore!")))))
 
+(defn nav [data owner]
+  (om/component
+    (dom/div #js {:className "float-box nav"} 
+      (dom/h3 #js {:className "project-name"} "Project Name")
+      (om/build clear-button data)
+      (dom/span #js {:className "controls"}
+        "filter ns: "
+        (dom/input #js {:type "text"
+                        :value (:ns data)
+                        :onKeyDown (fn [e]
+                                     (when (= "Enter" (.-key e))
+                                       (draw! data)))
+                        :onChange (fn [e]
+                                    (raise! data :nav/ns
+                                      (.. e -target -value)))}))
+      (dom/br #js {})
+      (dom/span #js {:className "controls"}
+        "highlight ns: "
+        (dom/input #js {:type "text"
+                        :value (:highlight data)
+                        :onKeyDown (fn [e]
+                                     (when (= "Enter" (.-key e))
+                                       (draw! data)))
+                        :onChange (fn [e]
+                                    (raise! data :nav/highlight
+                                      (.. e -target -value)))})))))
+
 ;; TODO: should show a loader
 (defn graph [data owner]
   (reify
     om/IRender
     (render [_]
-      (dom/div nil
-        (dom/div nil
-          (dom/span #js {:className "controls"}
-            "filter ns: "
-            (dom/input #js {:type "text"
-                            :value (:ns data)
-                            :onKeyDown (fn [e]
-                                         (when (= "Enter" (.-key e))
-                                           (draw! data)))
-                            :onChange (fn [e]
-                                        (raise! data :nav/ns
-                                          (.. e -target -value)))}))
-          (dom/br #js {})
-          (dom/span #js {:className "controls"}
-            "highlight ns: "
-            (dom/input #js {:type "text"
-                            :value (:highlight data)
-                            :onKeyDown (fn [e]
-                                         (when (= "Enter" (.-key e))
-                                           (draw! data)))
-                            :onChange (fn [e]
-                                        (raise! data :nav/highlight
-                                          (.. e -target -value)))})))
+      (dom/div #js {:className "page"} 
+        (om/build nav data)
         (dom/svg #js {:id "graph"}
           (dom/g #js {}))))
     om/IDidMount
@@ -180,23 +196,18 @@
       (when (and (not (empty? (:graph @data))))
         (draw! @data)))))
 
-
-
 ;; TODO: should be a multimethod
 (defn main [data owner]
   (om/component
-    (dom/div #js {:className "center"} 
-      (dom/button #js {:className "clear-btn"
-                       :onClick (fn [_] (raise! data :project/clear nil))} "X")
-      (cond
-        (empty? (:root data))
-        (om/build select-project data)
-        
-        (and (not (empty? (:root data))) (empty? (:srcs data)))
-        (om/build explorer data)
+    (cond
+      (empty? (:root data))
+      (om/build select-project data)
+      
+      (and (not (empty? (:root data))) (empty? (:srcs data)))
+      (om/build explorer data)
 
-        :else
-        (om/build graph data)))))
+      :else
+      (om/build graph data))))
 
 (defn init! []
   (om/root main app-state {:target (.getElementById js/document "app")}))
