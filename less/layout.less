@@ -1,4 +1,5 @@
 html, body {
+    background: @whiteGhost;
     height: 100%;
 }
 
@@ -38,23 +39,75 @@ html, body {
     margin-top: 0px;
 }
 
-.float-box {
-    background: white;
-    padding: 10px 10px 10px 10px;
-    border: 1px solid black;
+.box {
+    border-radius: 3px;
 }
 
+.float-box {
+    .box;
+    position: relative;
+    padding: 10px 10px 10px 10px;
+}
 
 // Style
 
+.blue-box {
+    font-family: 'Open Sans Light';
+    color: @whiteGhost;
+    background: @blueHavelock;
+}
+
+.Title {
+    font-family: 'Open Sans Semibold';
+    text-transform: uppercase;
+}
+
+.blue-box__title {
+    .Title;
+}
+
 .clear-btn {
+    color: @whiteGhost;
+    opacity: 0.7;
     cursor: pointer;
     margin-left: 8px;
-    color: #888;
+    font-size: 16px;
 }
 
 .clear-btn:hover {
-    color: @activeBlue;
     text-decoration: none;
-    font-size: 16px;
+    opacity: 1;
 }
+
+// FIX: not working
+.btn-center {
+    margin: 0 auto 0 auto;
+}
+
+// Button
+
+.btn {
+    .box;
+    display: inline-block;
+    padding: 5px;
+    padding-right: 10px;
+    padding-left: 10px;
+    .Title;
+}
+
+.btn--green {
+    .btn;
+    background: @greenAtlantis;
+}
+
+// Folder List
+
+.folder-list {
+    list-style: none;
+    padding-left: 10px;
+}
+
+.folder-list__item {
+    margin-right: 10px;
+}
+

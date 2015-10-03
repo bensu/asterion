@@ -97,8 +97,8 @@
 (defn select-project [data owner]
   (om/component
     (dom/div #js {:className "center-container"}
-      (dom/div #js {:className "float-box center"}
-        (dom/h1 nil "Constable")
+      (dom/div #js {:className "float-box blue-box center"}
+        (dom/h2 nil "Constable")
         (om/build platform data)
         (dom/input #js {:type "file"
                         :onChange
@@ -110,7 +110,8 @@
   (om/component
     (dom/li nil
       (dom/span nil
-        (dom/input #js {:type "checkbox"
+        (dom/input #js {:className "folder-list__item"
+                        :type "checkbox"
                         :checked (:selected? item)
                         :onClick click-fn})
         (deps/file-name (:name item))))))
@@ -137,27 +138,30 @@
              (mapv (fn [f] {:name f :selected? false})))})
     om/IRenderState
     (render-state [_ {:keys [ls]}]
-      (dom/div #js {:className "center"}
-        (om/build clear-button data)
-        (dom/p nil "We couldn't parse your project.clj Would you choosing the folders?")
-        (dom/p nil (:root data))
-        (apply dom/ul nil
-          (map-indexed 
-            (fn [i dir]
-              (om/build dir-item dir
-                {:opts {:click-fn (fn [_]
-                                    (om/update-state! owner
-                                      [:ls i :selected?] not))}}))
-            ls))
-        (dom/button
-          #js {:onClick (fn [_]
-                          (raise! data :project/start
-                            {:srcs (ls->srcs (om/get-state owner :ls))}))}
-          "Explore!")))))
+      (dom/div #js {:className "center-container"}
+        (dom/div #js {:className "float-box blue-box center"}
+          (om/build clear-button data)
+          (dom/h3 #js {:className "blue-box__title"} "Yikes!")
+          (dom/p nil "We couldn't read your project.clj. Would you mind choosing the source folders?")
+          (dom/p nil (:root data))
+          (apply dom/ul #js {:className "folder-list"} 
+            (map-indexed 
+              (fn [i dir]
+                (om/build dir-item dir
+                  {:opts {:click-fn (fn [_]
+                                      (om/update-state! owner
+                                        [:ls i :selected?] not))}}))
+              ls))
+          (dom/div
+            #js {:className "btn--green btn-center"
+                 :onClick (fn [_]
+                            (raise! data :project/start
+                              {:srcs (ls->srcs (om/get-state owner :ls))}))}
+            "Explore!"))))))
 
 (defn nav [data owner]
   (om/component
-    (dom/div #js {:className "float-box nav"} 
+    (dom/div #js {:className "float-box blue-box nav"} 
       (dom/h3 #js {:className "project-name"} "Project Name")
       (om/build clear-button data)
       (dom/span #js {:className "controls"}
