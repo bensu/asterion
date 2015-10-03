@@ -189,6 +189,18 @@
                               {:srcs (ls->srcs (om/get-state owner :ls))}))}
             "Explore!"))))))
 
+(defn nav-input [data owner {:keys [on-change value-key placeholder]}]
+  (om/component
+    (dom/input #js {:className "blue-input"
+                    :type "text"
+                    :placeholder placeholder 
+                    :value (get data value-key)
+                    :onKeyDown (fn [e]
+                                 (when (= "Enter" (.-key e))
+                                   (draw! data)))
+                    :onChange (fn [e]
+                                (on-change (.. e -target -value)))})))
+
 (defn nav [data owner]
   (om/component
     (dom/div #js {:className "float-box blue-box nav"} 
@@ -197,26 +209,14 @@
           (:name data)
           "Constable"))
       (om/build clear-button data)
-      (dom/input #js {:className "blue-input"
-                      :type "text"
-                      :placeholder "filter ns"
-                      :value (:ns data)
-                      :onKeyDown (fn [e]
-                                   (when (= "Enter" (.-key e))
-                                     (draw! data)))
-                      :onChange (fn [e]
-                                  (raise! data :nav/ns
-                                    (.. e -target -value)))})
-      (dom/input #js {:type "text"
-                      :placeholder "highlight ns"
-                      :className "blue-input"
-                      :value (:highlight data)
-                      :onKeyDown (fn [e]
-                                   (when (= "Enter" (.-key e))
-                                     (draw! data)))
-                      :onChange (fn [e]
-                                  (raise! data :nav/highlight
-                                    (.. e -target -value)))}))))
+      (om/build nav-input data
+        {:opts {:on-change (partial raise! data :nav/ns)
+                :value-key :ns
+                :placeholder "filter ns"}})
+      (om/build nav-input data
+        {:opts {:on-change (partial raise! data :nav/highlight)
+                :value-key :highlight 
+                :placeholder "highlight ns"}}))))
 
 ;; TODO: should show a loader
 (defn graph [data owner]
