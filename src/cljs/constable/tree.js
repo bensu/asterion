@@ -7,14 +7,12 @@ constable.tree.config = {w: 1600, h: 1200,
                          rx: 60, ry: 30,
                          fill: d3.scale.category20()};
 
-constable.tree.force = d3.layout.force()
-    .charge(-900)
-    .linkDistance(150)
-    .size([constable.tree.config.w, constable.tree.config.h]);
-
 // TODO: svg should take the whole background
 constable.tree.svg = function(nodeId) {
-    return d3.select(nodeId);
+    return d3.select(nodeId)
+    		   .attr("width", 1535)
+    
+                   .attr("height", 876);
                 // .attr("width", constable.tree.config.w)
         	// .attr("height", constable.tree.config.h);
 };
@@ -100,5 +98,5 @@ constable.tree.drawTree = function(nodeId, nsOpts, json) {
   zoom.translate([(root.attr("width") - g.graph().width * initialScale) / 2, 20])
       .scale(initialScale)
       .event(root);
-  root.attr("height", g.graph().height * initialScale + 40);
+  // root.attr("height", g.graph().height * initialScale + 40);
 };
