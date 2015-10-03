@@ -57,6 +57,24 @@ html, body {
     background: @blueHavelock;
 }
 
+.blue-input {
+    margin-bottom: 10px;
+    border: 0;
+    outline: 0;
+    border-bottom: 1px solid @whiteGhost;
+    width: 200px;
+    .blue-box;
+}
+
+input::-webkit-input-placeholder {
+    color: fade(@whiteGhost,50%);
+}
+
+input::-moz-input-placeholder {
+    color: fade(@whiteGhost,50%);
+}
+
+
 .Title {
     font-family: 'Open Sans Semibold';
     text-transform: uppercase;

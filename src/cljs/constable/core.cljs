@@ -195,30 +195,28 @@
       (dom/h3 #js {:className "project-name"}
         (if-not (empty? (:name data))
           (:name data)
-          (dom/input #js {:className "nav__name"
-                          :type "text"})))
+          "Constable"))
       (om/build clear-button data)
-      (dom/span #js {:className "controls"}
-        "filter ns: "
-        (dom/input #js {:type "text"
-                        :value (:ns data)
-                        :onKeyDown (fn [e]
-                                     (when (= "Enter" (.-key e))
-                                       (draw! data)))
-                        :onChange (fn [e]
-                                    (raise! data :nav/ns
-                                      (.. e -target -value)))}))
-      (dom/br #js {})
-      (dom/span #js {:className "controls"}
-        "highlight ns: "
-        (dom/input #js {:type "text"
-                        :value (:highlight data)
-                        :onKeyDown (fn [e]
-                                     (when (= "Enter" (.-key e))
-                                       (draw! data)))
-                        :onChange (fn [e]
-                                    (raise! data :nav/highlight
-                                      (.. e -target -value)))})))))
+      (dom/input #js {:className "blue-input"
+                      :type "text"
+                      :placeholder "filter ns"
+                      :value (:ns data)
+                      :onKeyDown (fn [e]
+                                   (when (= "Enter" (.-key e))
+                                     (draw! data)))
+                      :onChange (fn [e]
+                                  (raise! data :nav/ns
+                                    (.. e -target -value)))})
+      (dom/input #js {:type "text"
+                      :placeholder "highlight ns"
+                      :className "blue-input"
+                      :value (:highlight data)
+                      :onKeyDown (fn [e]
+                                   (when (= "Enter" (.-key e))
+                                     (draw! data)))
+                      :onChange (fn [e]
+                                  (raise! data :nav/highlight
+                                    (.. e -target -value)))}))))
 
 ;; TODO: should show a loader
 (defn graph [data owner]
