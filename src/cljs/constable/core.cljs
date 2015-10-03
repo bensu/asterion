@@ -143,12 +143,17 @@
                 :title "Clear Project"
                 :onClick (fn [_] (raise! data :project/clear nil))})))
 
+(defn src?
+  "Tries to guess if the dir-name is a source directory"
+  [dir-name]
+  (some? (re-find #"src" dir-name)))
+
 (defn explorer [data owner]
   (reify
     om/IInitState
     (init-state [_]
       {:ls (->> (deps/list-dirs (:root data))
-             (mapv (fn [f] {:name f :selected? false})))})
+             (mapv (fn [f] {:name f :selected? (src? f)})))})
     om/IRenderState
     (render-state [_ {:keys [ls]}]
       (dom/div #js {:className "center-container"}
