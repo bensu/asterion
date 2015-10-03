@@ -11,6 +11,7 @@
 (defonce app-state (atom {:ns ""
                           :highlight ""
                           :root "" 
+                          :name ""
                           :srcs #{} 
                           :graph {}
                           :platform :clj}))
@@ -34,10 +35,14 @@
     (let [f (:f msg)
           path (deps/file->folder f)] 
       (try
-        (let [srcs (->> (project/parse (deps/read-file f))
+        (let [project-string (deps/read-file f)
+              project-name (project/parse-name project-string)
+              srcs (->> (project/parse project-string)
                      (map (partial deps/join-paths path))
                      set)]
-          (update-state [:project/start {:srcs srcs}] (assoc data :root path)))
+          (update-state [:project/start {:srcs srcs}] (assoc data
+                                                        :root path
+                                                        :name project-name)))
         (catch js/Object _
           (assoc data :root path))))
 
@@ -162,7 +167,7 @@
 (defn nav [data owner]
   (om/component
     (dom/div #js {:className "float-box blue-box nav"} 
-      (dom/h3 #js {:className "project-name"} "Project Name")
+      (dom/h3 #js {:className "project-name"} (:name data))
       (om/build clear-button data)
       (dom/span #js {:className "controls"}
         "filter ns: "

@@ -29,6 +29,19 @@
     (vector? builds) builds 
     :else (throw (js/Error. "Builds should be maps or vectors"))))
 
+(defn parse-name [project-string]
+  (let [re #"defproject"]
+    (->> re
+      (extract-positions project-string)
+      first
+      (extract-exp-at project-string re)
+      name)))
+
+;; TODO: move to test
+(comment
+  (.log js/console (parse-name "(defproject komunike \"0.9.0-SNAPSHOT)"))
+  (.log js/console (parse-name "(defproject org.omcljs/om \"0.9.0-SNAPSHOT)")))
+
 (defn parse [project-string]
   (let [re #":cljsbuild"
         build-srcs (->> (extract-positions project-string re)
