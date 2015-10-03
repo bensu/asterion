@@ -112,11 +112,11 @@ const projectDialogOpts = {
   ]
 };
 
-function addProjectDialog() {
+function addProjectDialog(event, platform) {
   dialog.showOpenDialog(projectDialogOpts, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
-      mainWindow.webContents.send('add-project-success', filename);
+      mainWindow.webContents.send('add-project-success', filename, platform);
     }
   });
 }

@@ -12,6 +12,13 @@
 
 (def ipc (js/require "ipc"))
 
+(defonce ipc-callbacks (atom {}))
+
+(defn register! [k f]
+  (when-not (contains? @ipc-callbacks k)
+    (swap! ipc-callbacks assoc k f)
+    (.on ipc k f)))
+
 ;; ====================================================================== 
 ;; Util
 
@@ -94,19 +101,23 @@
     (or label value)))
 
 (defn buttons [{:keys [platform items] :as data} owner]
-  (om/component
-    (apply dom/div #js {:className "platform--btns"} 
-      (butlast
-        (interleave
-          (map (partial button platform 
-                 (fn [item _]
-                   (.on ipc "add-project-success"
-                     (fn [filename]
-                       (raise! data :project/add {:platform (:value item)
-                                                  :file filename})))
-                   (.send ipc "request-project-dialog")))
-            items)
-          (map (fn [_] (dom/br nil nil)) (range (count items))))))))
+  (reify
+    om/IWillMount
+    (will-mount [_]
+      (register! "add-project-success"
+        (fn [filename platform]
+          (raise! data :project/add {:platform (keyword platform) 
+                                     :file filename}))))
+    om/IRender
+    (render [_]
+      (apply dom/div #js {:className "platform--btns"} 
+        (butlast
+          (interleave
+            (map (partial button platform 
+                   (fn [item _]
+                     (.send ipc "request-project-dialog" (name (:value item)))))
+              items)
+            (map (fn [_] (dom/br nil nil)) (range (count items)))))))))
 
 (defn platform [data owner]
   (om/component
@@ -200,31 +211,35 @@
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
+
 (defn nav [data owner]
-  (om/component
-    (dom/div #js {:className "float-box--side blue-box nav"} 
-      (dom/h3 #js {:className "project-name"}
-        (if-not (empty? (:name data))
-          (:name data)
-          "Constable"))
-      (om/build clear-button data)
-      (om/build nav-input data
-        {:opts {:on-change (partial raise! data :nav/ns)
-                :on-enter (fn [] (draw! data))
-                :value-key :ns
-                :placeholder "filter ns"}})
-      (om/build nav-input data
-        {:opts {:on-change (partial raise! data :nav/highlight)
-                :on-enter (fn []
-                            (.on ipc "search-success"
-                              (fn [fs]
-                                (.log js/console fs)))
-                            (.send ipc "request-search"
-                              (clj->js (vec (:srcs data)))
-                              (:highlight data))
-                            (draw! data))
-                :value-key :highlight 
-                :placeholder "highlight ns"}}))))
+  (reify
+    om/IWillMount
+    (will-mount [_]
+      (register! "search-success" (fn [fs]
+                                    (.log js/console fs))))
+    om/IRender
+    (render [_]
+      (dom/div #js {:className "float-box--side blue-box nav"} 
+        (dom/h3 #js {:className "project-name"}
+          (if-not (empty? (:name data))
+            (:name data)
+            "Constable"))
+        (om/build clear-button data)
+        (om/build nav-input data
+          {:opts {:on-change (partial raise! data :nav/ns)
+                  :on-enter (fn [] (draw! data))
+                  :value-key :ns
+                  :placeholder "filter ns"}})
+        (om/build nav-input data
+          {:opts {:on-change (partial raise! data :nav/highlight)
+                  :on-enter (fn []
+                              (.send ipc "request-search"
+                                (clj->js (vec (:srcs data)))
+                                (:highlight data))
+                              (draw! data))
+                  :value-key :highlight 
+                  :placeholder "highlight ns"}})))))
 
 ;; TODO: should show a loader
 (defn graph [data owner]
