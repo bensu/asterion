@@ -1,5 +1,6 @@
 goog.provide('constable.tree');
 
+goog.require('goog.array');
 goog.require('cljsjs.d3');
 goog.require('constable.search');
 
@@ -25,10 +26,6 @@ constable.tree.colors = palette('tol',11);
 
 constable.tree.nodeToGroup = function(name) {
     return name.split("\.")[0];
-};
-
-Array.prototype.contains = function(element) {
-    return this.indexOf(element) > -1;
 };
 
 constable.tree.Graph = function(nsOpts, json) {
@@ -63,7 +60,7 @@ constable.tree.Graph = function(nsOpts, json) {
 
           var hgStyle = "";
           var labelStyle = "";
-          if (highlightNs && (highlightNs.contains(node.name))) {
+          if (highlightNs && (goog.array.contains(highlightNs, node.name))) {
               labelStyle = "fill:#f0f1eb";
               hgStyle = "fill:black;";
           } 
