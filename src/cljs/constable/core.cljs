@@ -8,13 +8,18 @@
 
 (enable-console-print!)
 
-(defonce app-state (atom {:ns ""
-                          :highlight ""
-                          :root "" 
-                          :name ""
-                          :srcs #{} 
-                          :graph {}
-                          :platform :clj}))
+;; ====================================================================== 
+;; Model
+
+(def init-state {:ns ""
+                 :highlight ""
+                 :graph {}
+                 :root "" 
+                 :name ""
+                 :srcs #{} 
+                 :platform :clj})
+
+(defonce app-state (atom init-state))
 
 ;; ====================================================================== 
 ;; Update
@@ -31,6 +36,7 @@
           graph (make-graph (:platform data) srcs)]
       (assoc data :graph graph :srcs srcs))
 
+    ;; TODO: cleanup with just
     :project/add
     (let [f (:f msg)
           path (deps/file->folder f)] 
@@ -46,7 +52,7 @@
         (catch js/Object _
           (assoc data :root path))))
 
-    :project/clear (dissoc data :root :srcs :ls)
+    :project/clear init-state
     
     :project/platform (assoc data :platform msg)
 
@@ -167,7 +173,11 @@
 (defn nav [data owner]
   (om/component
     (dom/div #js {:className "float-box blue-box nav"} 
-      (dom/h3 #js {:className "project-name"} (:name data))
+      (dom/h3 #js {:className "project-name"}
+        (if-not (empty? (:name data))
+          (:name data)
+          (dom/input #js {:className "nav__name"
+                          :type "text"})))
       (om/build clear-button data)
       (dom/span #js {:className "controls"}
         "filter ns: "
