@@ -3,6 +3,7 @@
   (:require [clojure.string :as str]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
+            [clojure.tools.namespace.file :as file]
             [constable.tree :as tree]
             [constable.deps :as deps]
             [constable.search :as search]
@@ -12,7 +13,7 @@
 
 (def ipc (js/require "ipc"))
 
-(defonce ipc-callbacks (atom {}))
+(def ipc-callbacks (atom {}))
 
 (defn register! [k f]
   (when-not (contains? @ipc-callbacks k)
@@ -211,13 +212,19 @@
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
+(defn file->ns-name [f]
+  (-> f file/read-file-ns-decl rest first))
 
 (defn nav [data owner]
   (reify
     om/IWillMount
     (will-mount [_]
-      (register! "search-success" (fn [fs]
-                                    (.log js/console fs))))
+      (register! "search-success"
+        (fn [fs]
+          (println
+            (->> (js->clj fs)
+              (remove empty?)
+              (map file->ns-name))))))
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
