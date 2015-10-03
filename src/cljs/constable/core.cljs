@@ -8,6 +8,8 @@
 
 (enable-console-print!)
 
+(def ipc (js/require "ipc"))
+
 ;; ====================================================================== 
 ;; Model
 
@@ -17,7 +19,7 @@
                  :root "" 
                  :name ""
                  :srcs #{} 
-                 :platform :clj})
+                 :platform nil})
 
 (defonce app-state (atom init-state))
 
@@ -38,19 +40,20 @@
 
     ;; TODO: cleanup with just
     :project/add
-    (let [f (:f msg)
-          path (deps/file->folder f)] 
+    (let [{:keys [file platform]} msg 
+          path (deps/file->folder file)] 
       (try
-        (let [project-string (deps/read-file f)
+        (let [project-string (deps/read-file file)
               project-name (project/parse-name project-string)
               srcs (->> (project/parse project-string)
                      (map (partial deps/join-paths path))
                      set)]
           (update-state [:project/start {:srcs srcs}] (assoc data
                                                         :root path
-                                                        :name project-name)))
+                                                        :name project-name
+                                                        :platform platform)))
         (catch js/Object _
-          (assoc data :root path))))
+          (assoc data :root path :platform platform))))
 
     :project/clear init-state
     
@@ -75,20 +78,22 @@
        :highlight (str/split (:highlight data) " ")})
     (clj->js (:graph data))))
 
-(defn radio [name f {:keys [value label]}]
-  (dom/span nil
-    (dom/input #js {:id value :type "radio" :name name
-                    :value value :onChange (f value)})
-    (dom/label #js {:htmlFor value} (or label value))))
+(defn button [platform f {:keys [value label] :as item}]
+  (dom/div #js {:className "btn--green"
+                :onClick (partial f item)}
+    (or label value)))
 
-(defn radios [{:keys [platform items] :as data} owner]
+(defn buttons [{:keys [platform items] :as data} owner]
   (om/component
-    (apply dom/ul nil
+    (apply dom/div #js {:className "platform--btns"} 
       (interleave
-        (map (partial radio "platform"
-               (fn [item-value]
-                 (fn [_]
-                   (raise! data :project/platform (keyword item-value)))))
+        (map (partial button platform 
+               (fn [item _]
+                 (.on ipc "add-project-success"
+                   (fn [filename]
+                     (raise! data :project/add {:platform (:value item)
+                                                :file filename})))
+                 (.send ipc "request-project-dialog")))
           items)
         (map (fn [_] (dom/br nil nil)) (range (count items)))))))
 
@@ -100,22 +105,19 @@
 
 (defn platform [data owner]
   (om/component
-    (dom/div nil
-      (om/build radios (assoc data 
-                         :items (mapv (partial hash-map :value)
-                                      ["clj" "cljs" "cljc"]))))))
+    (dom/div #js {:className "platform--toggle"} 
+      (om/build buttons 
+        (assoc data 
+          :items (mapv (fn [[v l]] {:value v :label l}) 
+                   [[:clj "clj"] [:cljs "cljs"] [:cljc "both"]]))))))
 
 (defn select-project [data owner]
   (om/component
     (dom/div #js {:className "center-container"}
       (dom/div #js {:className "float-box blue-box center"}
         (dom/h2 nil "Constable")
-        (om/build platform data)
-        (dom/input #js {:type "file"
-                        :onChange
-                        (fn [e]
-                          (.preventDefault e)
-                          (raise! data :project/add {:f (.-path (e->file e))}))})))))
+        (dom/p nil "Open your project.clj for:")
+        (om/build platform data)))))
 
 (defn dir-item [item owner {:keys [click-fn]}]
   (om/component
@@ -153,7 +155,7 @@
         (dom/div #js {:className "float-box blue-box center"}
           (om/build clear-button data)
           (dom/h3 #js {:className "blue-box__title"} "Yikes!")
-          (dom/p nil "We couldn't read your project.clj. Would you mind choosing the source folders?")
+          (dom/p nil "We couldn't read your project.clj. Would you mind selecting the source folders?")
           (dom/p nil (:root data))
           (apply dom/ul #js {:className "folder-list"} 
             (map-indexed 

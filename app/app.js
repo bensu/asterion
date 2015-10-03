@@ -99,6 +99,28 @@ const browserWindowOptions = {
 // Register IPC Calls from the Renderers
 //------------------------------------------------------------------------------
 
+const projectDialogOpts = { 
+  title: 'Please select an existing project.clj file',
+  properties: ['openFile'],
+  filters: [
+    {
+      name: 'Leiningen project.clj',
+      extensions: ['clj']
+    }
+  ]
+};
+
+function addProjectDialog() {
+  dialog.showOpenDialog(projectDialogOpts, function(filenames) {
+    console.log(filenames);
+    if (filenames) {
+      var filename = filenames[0];
+      mainWindow.webContents.send('add-project-success', filename);
+    }
+  });
+}
+
+ipc.on('request-project-dialog', addProjectDialog);
 
 //------------------------------------------------------------------------------
 // Ready

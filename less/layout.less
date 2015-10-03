@@ -88,6 +88,8 @@ html, body {
 
 .btn {
     .box;
+    cursor: pointer; 
+    cursor: hand;
     display: inline-block;
     padding: 5px;
     padding-right: 10px;
@@ -98,6 +100,19 @@ html, body {
 .btn--green {
     .btn;
     background: @greenAtlantis;
+}
+
+.btn--green--active {
+    .btn;
+    background: darken(@greenAtlantis,15%);
+}
+
+// Platform Buttons
+
+.platform--btns {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
 }
 
 // Folder List
