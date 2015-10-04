@@ -179,7 +179,7 @@
       (dom/div #js {:className "center-container"}
         (dom/div #js {:className "float-box blue-box center"}
           (om/build clear-button data)
-          (dom/h3 #js {:className "blue-box__title"} "Yikes!")
+          (dom/h3 #js {:className "blue-box__subtitle"} "Yikes!")
           (dom/p nil "We couldn't read your pom.xml/project.clj")
           (dom/p nil "Would you mind selecting the source folders?")
           (if (empty? (:name data))
@@ -233,10 +233,9 @@
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
-        (dom/h3 #js {:className "project-name"}
-          (if-not (empty? (:name data))
-            (:name data)
-            "Constable"))
+        (if (empty? (:name data))
+          (dom/h3 #js {:className "blue-box__title"} "Constable")
+          (dom/h3 #js {:className "project-name"} (:name data)))
         (om/build clear-button data)
         (om/build nav-input data
           {:opts {:on-change (partial raise! data :nav/ns)

@@ -38,10 +38,6 @@ html, body {
     right: 10px;
 }
 
-.project-name {
-    margin-top: 0px;
-}
-
 .box {
     padding: 12px 12px 12px 12px; 
     border-radius: 2px;
@@ -72,8 +68,26 @@ html, body {
     .blue;
 }
 
-.blue-box > p, .blue-box > h1 {
+.hack-align {
     margin-left: 8px;
+}
+
+.blue-box {
+    > p {
+        .hack-align;
+    }
+    > h1 {
+        .hack-align;
+    }
+    > strong {
+        .hack-align;
+    }
+    > h3 {
+        .hack-align;
+    }
+    > input {
+        .hack-align;
+    }
 }
 
 .blue-input {
@@ -99,12 +113,25 @@ input::-moz-input-placeholder {
     text-transform: uppercase;
 }
 
-.blue-box__title {
+.box__title {
     margin-top: 8px;
     margin-bottom: 12px;
+}
+
+.blue-box__title {
+    .box__title;
     font-family: 'Open Sans Light';
     font-weight: 300;
-    // .Title;
+}
+
+.blue-box__subtitle {
+    .box__title;
+    .Title; 
+}
+
+.project-name {
+    .blue-box__title;
+    text-transform: lowercase;
 }
 
 .clear-btn {
@@ -120,7 +147,12 @@ input::-moz-input-placeholder {
     opacity: 1;
 }
 
+.last-btns {
+    margin-bottom: 6px; 
+}
+
 .btn-container--center {
+    .last-btns;
     text-align: center;
 }
 
@@ -160,7 +192,7 @@ input::-moz-input-placeholder {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
-    margin-bottom: 6px;
+    .last-btns;
 }
 
 // Folder List
