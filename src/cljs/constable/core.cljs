@@ -133,8 +133,9 @@
   (om/component
     (dom/div #js {:className "center-container"}
       (dom/div #js {:className "float-box blue-box center"}
-        (dom/h2 #js {:className "blue-box__title"} "Constable")
-        (dom/p nil "Open your pom.xml/project.clj for:")
+        (dom/h1 #js {:className "blue-box__title"} "Constable")
+        (dom/p nil "A tool to make and explore dependency graphs for Clojure(Script) projects.")
+        (dom/p nil "To get started, open your pom.xml/project.clj for:")
         (om/build platform data)))))
 
 (defn dir-item [item owner {:keys [click-fn]}]

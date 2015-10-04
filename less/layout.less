@@ -1,3 +1,5 @@
+@import "util.less";
+
 html, body {
     background: @whiteGhost;
     height: 100%;
@@ -41,12 +43,13 @@ html, body {
 }
 
 .box {
-    padding: 30px 30px 30px 30px;
-    border-radius: 3px;
+    padding: 12px 12px 12px 12px; 
+    border-radius: 2px;
 }
 
 .float-box {
     .box;
+    .BoxShadowHelper(2);
     width: 400px;
     position: relative;
 }
@@ -58,10 +61,19 @@ html, body {
 
 // Style
 
-.blue-box {
+.blue {
     font-family: 'Open Sans Light';
     color: @whiteGhost;
     background: @blueHavelock;
+}
+
+.blue-box {
+    .BoxShadowHelper(2);
+    .blue;
+}
+
+.blue-box > p, .blue-box > h1 {
+    margin-left: 8px;
 }
 
 .blue-input {
@@ -70,7 +82,7 @@ html, body {
     outline: 0;
     border-bottom: 1px solid @whiteGhost;
     width: 180px;
-    .blue-box;
+    .blue;
 }
 
 input::-webkit-input-placeholder {
@@ -88,8 +100,11 @@ input::-moz-input-placeholder {
 }
 
 .blue-box__title {
-    margin-top: 0;
-    .Title;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    font-family: 'Open Sans Light';
+    font-weight: 300;
+    // .Title;
 }
 
 .clear-btn {
@@ -116,10 +131,13 @@ input::-moz-input-placeholder {
 // Button
 
 .btn {
+    .BoxShadowHelper(1);
     .box;
     cursor: pointer; 
     cursor: hand;
     display: inline-block;
+    text-align: center;
+    min-width: 50px;
     padding: 5px;
     padding-right: 10px;
     padding-left: 10px;
@@ -142,6 +160,7 @@ input::-moz-input-placeholder {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
+    margin-bottom: 6px;
 }
 
 // Folder List
