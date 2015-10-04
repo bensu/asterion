@@ -32,15 +32,15 @@
 ;; ====================================================================== 
 ;; Model
 
-(def init-state {:ns ""
-                 :highlight ""
-                 :highlighted #{}
+(def init-state {:nav {:ns ""
+                       :highlight "" ;; can be local state
+                       :highlighted #{}}
                  :graph {}
                  :errors #{}
-                 :root "" 
-                 :name ""
-                 :srcs #{} 
-                 :platform nil})
+                 :project {:root ""
+                           :name ""
+                           :srcs #{} 
+                           :platform nil}})
 
 (defonce app-state (atom init-state))
 
@@ -52,12 +52,18 @@
     (deps/depgraph platform srcs)
     (deps/depgraph srcs)))
 
+;; TODO: move to deps
+(defn file->ns-name [f]
+  (-> f file/read-file-ns-decl rest first))
+
 (defn update-state [[tag msg] data]
   (case tag
     :project/start
     (let [srcs (:srcs msg)
           graph (make-graph (:platform data) srcs)]
-      (assoc data :graph graph :srcs srcs))
+      (-> data
+        (assoc :graph graph)
+        (assoc-in [:project :srcs] srcs)))
 
     ;; TODO: cleanup with just
     :project/add
@@ -69,24 +75,34 @@
               srcs (->> (project/parse project-string)
                      (map (partial deps/join-paths path))
                      set)]
-          (update-state [:project/start {:srcs srcs}] (assoc data
-                                                        :root path
-                                                        :name project-name
-                                                        :platform platform)))
+          (update-state [:project/start {:srcs srcs}]
+            (update data :project
+              #(merge % {:root path :name project-name :platform platform}))))
         (catch js/Object _
-          (assoc data :root path :platform platform))))
+          (update data :project
+            #(merge % {:root path :platform platform})))))
 
     :project/clear init-state
     
-    :project/platform (assoc data :platform msg)
+    :project/platform (assoc-in data [:project :platform] msg)
 
-    :nav/ns (assoc data :ns msg)
+    :nav/ns (assoc-in data [:nav :ns] msg)
     
-    :nav/highlight (assoc data :highlight msg)
+    :nav/highlight (assoc-in data [:nav :highlight] msg)
+    
+    :nav/clear-highlighted (assoc-in data [:nav :highlighted] #{})
     
     :nav/add-error (update data :errors #(conj % msg))
     
-    :nav/clear-errors (assoc data :errors #{})))
+    :nav/clear-errors (assoc data :errors #{})
+    
+    :nav/search-error (assoc data :errors #{:nav/search-error})
+
+    :nav/files-found (assoc-in data [:nav :highlighted]
+                       (->> (js->clj msg)
+                         (remove empty?)
+                         (map file->ns-name)
+                         set))))
 
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
@@ -115,10 +131,10 @@
 
 ;; TODO: handle no graph - validation 
 (defn draw! [data]
-  (let [graph (filter-graph (:graph data) (str/split (:ns data) " "))]
+  (let [graph (filter-graph (:graph data) (str/split (:ns (:nav data)) " "))]
     (if (valid-graph? graph)
       (tree/drawTree "#graph"
-        (clj->js {:highlighted (:highlighted data)})
+        (clj->js {:highlighted (:highlighted (:nav data))})
         (clj->js graph))
       (raise! data :nav/add-error :graph/empty-nodes))))
 
@@ -213,7 +229,7 @@
     om/IInitState
     (init-state [_]
       {:error-on? true
-       :ls (->> (deps/list-dirs (:root data))
+       :ls (->> (deps/list-dirs (:root (:project data)))
              (mapv (fn [f] {:name f :selected? (src? f)})))})
     om/IRenderState
     (render-state [_ {:keys [ls error-on?]}]
@@ -231,7 +247,7 @@
           (dom/h3 #js {:className "blue-box__subtitle"} "Source Paths")
           (dom/p nil "Would you mind selecting the source folders?")
           (if (empty? (:name data))
-            (dom/strong nil (:root data))
+            (dom/strong nil (:root (:project data)))
             (dom/h3 #js {:className "blue-box__title"} (:name data)))
           (apply dom/ul #js {:className "folder-list"} 
             (map-indexed 
@@ -262,23 +278,17 @@
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
-;; TODO: move to deps
-(defn file->ns-name [f]
-  (-> f file/read-file-ns-decl rest first))
-
 (defn nav [data owner]
   (reify
     om/IWillMount
     (will-mount [_]
+      (register! "search-error"
+        (fn [error]
+          (raise! data :nav/search-error error)))
       (register! "search-success"
         (fn [fs]
-          (let [new-data (assoc @data :highlighted
-                           (->> (js->clj fs)
-                             (remove empty?)
-                             (map file->ns-name)
-                             set))]
-            (om/update! data new-data)
-            (draw! data)))))
+          (raise! data :nav/files-found fs)
+          (draw! data))))
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
@@ -286,27 +296,28 @@
           (dom/h3 #js {:className "blue-box__title"} "Constable")
           (dom/h3 #js {:className "project-name"} (:name data)))
         (om/build clear-button data)
-        (om/build nav-input data
+        (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
                   :on-enter (fn [_] (draw! data))
                   :value-key :ns
                   :placeholder "filter ns"}})
-        (om/build nav-input data
+        (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/highlight)
                   :on-enter (fn [e]
                               (let [v (.. e -target -value)]
                                 (if (empty? v)
                                   (do
-                                    (om/update! data :highlighted #{})
+                                    (raise! data :nav/clear-highlighted nil)
                                     (draw! data))
                                   (do
                                     (.send ipc "request-search"
-                                      (clj->js (vec (:srcs data)))
+                                      (clj->js (vec (:srcs (:project data))))
                                       (:highlight data))))))
                   :value-key :highlight
                   :placeholder "highlight ns"}})))))
 
-(def error->msg {:graph/empty-nodes "We found nothing to graph"})
+(def error->msg {:graph/empty-nodes "We found nothing to graph"
+                 :nav/search-error "There was a problem while searching"})
 
 ;; TODO: should show a loader
 (defn graph [data owner]
@@ -334,10 +345,11 @@
 (defn main [data owner]
   (om/component
     (cond
-      (empty? (:root data))
+      (empty? (:root (:project data)))
       (om/build select-project data)
       
-      (and (not (empty? (:root data))) (empty? (:srcs data)))
+      (and (not (empty? (:root (:project data))))
+           (empty? (:srcs (:project data))))
       (om/build explorer data)
 
       :else
