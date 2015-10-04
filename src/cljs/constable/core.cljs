@@ -1,6 +1,7 @@
 (ns constable.core
   (:import [goog.ui IdGenerator])
   (:require [clojure.string :as str]
+            [goog.string :as gstr]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [clojure.tools.namespace.file :as file]
@@ -89,13 +90,32 @@
 ;; ====================================================================== 
 ;; Components
 
+(defn valid-graph? [graph]
+  (not (empty? (:nodes graph))))
+
+(defn filter-graph [graph ns]
+  (letfn [(starts-with-any? [s]
+            (->> ns
+              (map (partial gstr/caseInsensitiveStartsWith s))
+              (some true?)))
+          (node-matches? [node]
+            (starts-with-any? (name (:name node))))
+          (edge-matches? [edge]
+            (->> (vals (select-keys edge [:target :source]))
+              (map (comp starts-with-any? name))
+              (some true?)))]
+    (-> graph
+      (update :nodes (comp vec (partial remove node-matches?)))
+      (update :edges (comp vec (partial remove edge-matches?))))))
+
 ;; TODO: handle no graph - validation 
 (defn draw! [data]
-  (tree/drawTree "#graph"
-    (clj->js
-      {:ns (str/split (:ns data) " ")
-       :highlighted (:highlighted data)})
-    (clj->js (:graph data))))
+  (let [graph (filter-graph (:graph data) (str/split (:ns data) " "))]
+    (if (valid-graph? graph)
+      (tree/drawTree "#graph"
+        (clj->js {:highlighted (:highlighted data)})
+        (clj->js graph))
+      (println "ERROR"))))
 
 (defn button [platform f {:keys [value label] :as item}]
   (dom/div #js {:className "btn--green"

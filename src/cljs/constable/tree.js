@@ -12,7 +12,6 @@ constable.tree.config = {w: 1600, h: 1200,
 constable.tree.svg = function(nodeId) {
     return d3.select(nodeId)
     		   .attr("width", 1535)
-    
                    .attr("height", 876);
                 // .attr("width", constable.tree.config.w)
         	// .attr("height", constable.tree.config.h);
@@ -29,17 +28,6 @@ constable.tree.nodeToGroup = function(name) {
 };
 
 constable.tree.Graph = function(nsOpts, json) {
-   var removeNs = nsOpts.ns;
-   var shouldKeep = function (name) {
-       var keep = true;
-       removeNs.forEach(function(ns) {
-           if (name.startsWith(ns)) {
-               keep = false;
-           };
-       });
-       return keep;
-   };
-    
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
 
    var highlightNs = nsOpts.highlighted;
@@ -47,33 +35,29 @@ constable.tree.Graph = function(nsOpts, json) {
    var allColors = constable.tree.colors.slice(0);
    var nodeColors = {};
    json.nodes.forEach(function(node) {
-      if (shouldKeep(node.name)) {
-          var group = constable.tree.nodeToGroup(node.name);
-          var color;
-          if (typeof nodeColors[group] !== "undefined") {
-              color = nodeColors[group];
-          } else {
-              color = allColors[allColors.length - 1];
-              nodeColors[group] = color;
-              allColors.pop();
-          }
-
-          var hgStyle = "";
-          var labelStyle = "";
-          if (highlightNs && (goog.array.contains(highlightNs, node.name))) {
-              labelStyle = "fill:#f0f1eb";
-              hgStyle = "fill:black;";
-          } 
-          g.setNode(node.name, {label: node.name,
-                                labelStyle: labelStyle, 
-                                style: "fill:#" + color + ";stroke:black;" + hgStyle});
-
-      };
-   });
+       var group = constable.tree.nodeToGroup(node.name);
+       var color;
+       if (typeof nodeColors[group] !== "undefined") {
+           color = nodeColors[group];
+       } else {
+           color = allColors[allColors.length - 1];
+           nodeColors[group] = color;
+           allColors.pop();
+       }
+       var hgStyle = "";
+       var labelStyle = "";
+       if (highlightNs && (goog.array.contains(highlightNs, node.name))) {
+           labelStyle = "fill:#f0f1eb";
+           hgStyle = "fill:black;";
+       } 
+       g.setNode(node.name,
+                 {label: node.name,
+                  labelStyle: labelStyle, 
+                  style: "fill:#" + color + ";stroke:black;" + hgStyle});
+       });
+       
    json.edges.forEach(function(edge) {
-      if (shouldKeep(edge.source) && shouldKeep(edge.target)) {
-        g.setEdge(edge.source, edge.target,{});
-      };
+       g.setEdge(edge.source, edge.target,{});
    });
    g.nodes().forEach(function(v) {
       var node = g.node(v);
