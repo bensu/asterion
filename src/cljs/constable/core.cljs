@@ -56,6 +56,11 @@
 (defn file->ns-name [f]
   (-> f file/read-file-ns-decl rest first))
 
+(defn call? [f]
+  (try
+    (f)
+    (catch js/Object _ nil)))
+
 (defn update-state [[tag msg] data]
   (case tag
     :project/start
@@ -72,12 +77,16 @@
       (try
         (let [project-string (deps/read-file file)
               project-name (project/parse-name project-string)
-              srcs (->> (project/parse project-string)
-                     (map (partial deps/join-paths path))
-                     set)]
-          (update-state [:project/start {:srcs srcs}]
-            (update data :project
-              #(merge % {:root path :name project-name :platform platform}))))
+              data' (update data :project
+                      #(merge % {:root path
+                                 :name project-name
+                                 :platform platform}))]
+          (try
+            (let [srcs (->> (project/parse project-string)
+                         (map (partial deps/join-paths path))
+                         set)]
+              (update-state [:project/start {:srcs srcs}] data'))
+            (catch js/Object _ data')))
         (catch js/Object _
           (update data :project
             #(merge % {:root path :platform platform})))))
@@ -246,9 +255,9 @@
           (om/build clear-button data)
           (dom/h3 #js {:className "blue-box__subtitle"} "Source Paths")
           (dom/p nil "Would you mind selecting the source folders?")
-          (if (empty? (:name data))
+          (if (empty? (:name (:project data)))
             (dom/strong nil (:root (:project data)))
-            (dom/h3 #js {:className "blue-box__title"} (:name data)))
+            (dom/h3 #js {:className "blue-box__title"} (:name (:project data))))
           (apply dom/ul #js {:className "folder-list"} 
             (map-indexed 
               (fn [i dir]
@@ -292,9 +301,9 @@
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
-        (if (empty? (:name data))
+        (if (empty? (:name (:project data)))
           (dom/h3 #js {:className "blue-box__title"} "Constable")
-          (dom/h3 #js {:className "project-name"} (:name data)))
+          (dom/h3 #js {:className "project-name"} (:name (:project data))))
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
