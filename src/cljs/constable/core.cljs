@@ -36,6 +36,7 @@
                  :highlight ""
                  :highlighted #{}
                  :graph {}
+                 :errors #{}
                  :root "" 
                  :name ""
                  :srcs #{} 
@@ -115,7 +116,7 @@
       (tree/drawTree "#graph"
         (clj->js {:highlighted (:highlighted data)})
         (clj->js graph))
-      (println "ERROR"))))
+      (om/transact! data :errors #(conj % :graph/empty-nodes)))))
 
 (defn button [platform f {:keys [value label] :as item}]
   (dom/div #js {:className "btn--green"
@@ -273,7 +274,7 @@
                              (map file->ns-name)
                              set))]
             (om/update! data new-data)
-            (draw! new-data)))))
+            (draw! data)))))
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
@@ -293,7 +294,7 @@
                                 (if (empty? v)
                                   (do
                                     (om/update! data :highlighted #{})
-                                    (draw! (assoc data :highlighted #{})))
+                                    (draw! data))
                                   (do
                                     (.send ipc "request-search"
                                       (clj->js (vec (:srcs data)))
@@ -301,30 +302,29 @@
                   :value-key :highlight
                   :placeholder "highlight ns"}})))))
 
+(def error->msg {:graph/empty-nodes "We found nothing to graph"})
+
 ;; TODO: should show a loader
 (defn graph [data owner]
   (reify
-    om/IInitState
-    (init-state [_]
-      {:errors #{}})
-    om/IRenderState
-    (render-state [_ {:keys [errors]}]
+    om/IRender
+    (render [_]
       (dom/div #js {:className "page"} 
         (om/build nav data)
-        (when-not (empty? errors)
+        (when-not (empty? (:errors data))
           (om/build error-card
             (assoc data
               :error {:title "Blorgons!"
-                      :msg "We couldn't read your pom.xml/project.clj"})
+                      :msg (error->msg (first (:errors data)))})
             {:opts {:class "notification error-card"
                     :close-fn (fn [_]
-                                (om/set-state! owner :error-on? false))}}))
+                                (om/update! data :errors #{}))}}))
         (dom/svg #js {:id "graph"}
           (dom/g #js {}))))
     om/IDidMount
     (did-mount [_]
       (when-not (empty? (:graph @data))
-        (draw! @data)))))
+        (draw! data)))))
 
 ;; TODO: should be a multimethod
 (defn main [data owner]
