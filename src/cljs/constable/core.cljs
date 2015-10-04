@@ -176,12 +176,12 @@
   [dir-name]
   (some? (re-find #"src" dir-name)))
 
-(defn error-card [data owner {:keys [close-fn]}]
+(defn error-card [{:keys [error] :as data} owner {:keys [close-fn class]}]
   (om/component
-    (dom/div #js {:className "float-box center error-card"}
+    (dom/div #js {:className class}
       (om/build close-button data {:opts {:close-fn close-fn}})
-      (dom/h3 #js {:className "blue-box__subtitle"} "Blorgons!")
-      (dom/p nil "We couldn't read your pom.xml/project.clj"))))
+      (dom/h3 #js {:className "blue-box__subtitle"} (:title error))
+      (dom/p nil (:msg error)))))
 
 (defn explorer [data owner]
   (reify
@@ -194,8 +194,12 @@
     (render-state [_ {:keys [ls error-on?]}]
       (dom/div #js {:className "center-container"}
         (when error-on?
-          (om/build error-card data
-            {:opts {:close-fn (fn [_]
+          (om/build error-card
+            (assoc data
+              :error {:title "Blorgons!"
+                      :msg "We couldn't read your pom.xml/project.clj"})
+            {:opts {:class "float-box center error-card"
+                    :close-fn (fn [_]
                                 (om/set-state! owner :error-on? false))}}))
         (dom/div #js {:className "float-box blue-box center"}
           (om/build clear-button data)
@@ -233,6 +237,7 @@
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
+;; TODO: move to deps
 (defn file->ns-name [f]
   (-> f file/read-file-ns-decl rest first))
 
@@ -279,10 +284,21 @@
 ;; TODO: should show a loader
 (defn graph [data owner]
   (reify
-    om/IRender
-    (render [_]
+    om/IInitState
+    (init-state [_]
+      {:errors #{}})
+    om/IRenderState
+    (render-state [_ {:keys [errors]}]
       (dom/div #js {:className "page"} 
         (om/build nav data)
+        (when-not (empty? errors)
+          (om/build error-card
+            (assoc data
+              :error {:title "Blorgons!"
+                      :msg "We couldn't read your pom.xml/project.clj"})
+            {:opts {:class "notification error-card"
+                    :close-fn (fn [_]
+                                (om/set-state! owner :error-on? false))}}))
         (dom/svg #js {:id "graph"}
           (dom/g #js {}))))
     om/IDidMount

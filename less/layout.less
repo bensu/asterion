@@ -21,11 +21,29 @@ html, body {
     height: inherit;
 }
 
+@topMargin: 20px;
+
 .nav {
-    width: 230px;
-    position: fixed;
-    margin-left: 20px;
-    margin-top: 20px;
+    width: 250px;
+    margin-left: @topMargin;
+    margin-top: @topMargin; 
+    z-index: 1;
+}
+
+.box {
+    padding: 12px 12px 12px 18px; 
+    border-radius: 2px;
+}
+
+.notification {
+    .box;
+    .BoxShadowHelper(2);
+    position: absolute;
+    left: 50%;
+    width: 500px;
+    margin-left: -250px;
+    margin-top: @topMargin;
+    z-index: 2;
 }
 
 .center {
@@ -37,11 +55,6 @@ html, body {
     position: absolute;
     top: 10px;
     right: 10px;
-}
-
-.box {
-    padding: 12px 12px 12px 18px; 
-    border-radius: 2px;
 }
 
 .float-box {
@@ -89,6 +102,9 @@ input::-moz-input-placeholder {
 .error-card {
     color: @whiteGhost;
     background: @indianRed; 
+    > p {
+        margin-bottom: 8px;
+    }
 }
 
 .Title {
