@@ -14,6 +14,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
 }
 
 .page {
@@ -48,6 +49,7 @@ html, body {
     .BoxShadowHelper(2);
     width: 400px;
     position: relative;
+    margin-bottom: 8px;
 }
 
 .float-box--side {
@@ -64,7 +66,6 @@ html, body {
 }
 
 .blue-box {
-    .BoxShadowHelper(2);
     .blue;
 }
 
@@ -85,6 +86,10 @@ input::-moz-input-placeholder {
     color: fade(@whiteGhost,50%);
 }
 
+.error-card {
+    color: @whiteGhost;
+    background: @indianRed; 
+}
 
 .Title {
     font-family: 'Open Sans Semibold';

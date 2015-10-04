@@ -163,24 +163,43 @@
                 :title "Clear Project"
                 :onClick (fn [_] (raise! data :project/clear nil))})))
 
+(defn close-button [data owner {:keys [close-fn]}]
+  (om/component
+    (dom/i #js {:className "fa fa-times clear-btn float-right-corner"
+                :title "Dismiss"
+                :onClick (if (fn? close-fn)
+                           close-fn
+                           identity)})))
+
 (defn src?
   "Tries to guess if the dir-name is a source directory"
   [dir-name]
   (some? (re-find #"src" dir-name)))
 
+(defn error-card [data owner {:keys [close-fn]}]
+  (om/component
+    (dom/div #js {:className "float-box center error-card"}
+      (om/build close-button data {:opts {:close-fn close-fn}})
+      (dom/h3 #js {:className "blue-box__subtitle"} "Blorgons!")
+      (dom/p nil "We couldn't read your pom.xml/project.clj"))))
+
 (defn explorer [data owner]
   (reify
     om/IInitState
     (init-state [_]
-      {:ls (->> (deps/list-dirs (:root data))
+      {:error-on? true
+       :ls (->> (deps/list-dirs (:root data))
              (mapv (fn [f] {:name f :selected? (src? f)})))})
     om/IRenderState
-    (render-state [_ {:keys [ls]}]
+    (render-state [_ {:keys [ls error-on?]}]
       (dom/div #js {:className "center-container"}
+        (when error-on?
+          (om/build error-card data
+            {:opts {:close-fn (fn [_]
+                                (om/set-state! owner :error-on? false))}}))
         (dom/div #js {:className "float-box blue-box center"}
           (om/build clear-button data)
-          (dom/h3 #js {:className "blue-box__subtitle"} "Yikes!")
-          (dom/p nil "We couldn't read your pom.xml/project.clj")
+          (dom/h3 #js {:className "blue-box__subtitle"} "Source Paths")
           (dom/p nil "Would you mind selecting the source folders?")
           (if (empty? (:name data))
             (dom/strong nil (:root data))
