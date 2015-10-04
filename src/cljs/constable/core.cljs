@@ -12,6 +12,9 @@
 
 (enable-console-print!)
 
+;; ====================================================================== 
+;; Util
+
 (def ipc (js/require "ipc"))
 
 (def ipc-callbacks (atom {}))
@@ -20,9 +23,6 @@
   (when-not (contains? @ipc-callbacks k)
     (swap! ipc-callbacks assoc k f)
     (.on ipc k f)))
-
-;; ====================================================================== 
-;; Util
 
 (def id-generator (IdGenerator.))
 
@@ -82,7 +82,11 @@
 
     :nav/ns (assoc data :ns msg)
     
-    :nav/highlight (assoc data :highlight msg)))
+    :nav/highlight (assoc data :highlight msg)
+    
+    :nav/add-error (update data :errors #(conj % msg))
+    
+    :nav/clear-errors (assoc data :errors #{})))
 
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
@@ -116,7 +120,7 @@
       (tree/drawTree "#graph"
         (clj->js {:highlighted (:highlighted data)})
         (clj->js graph))
-      (om/transact! data :errors #(conj % :graph/empty-nodes)))))
+      (raise! data :nav/add-error :graph/empty-nodes))))
 
 (defn button [platform f {:keys [value label] :as item}]
   (dom/div #js {:className "btn--green"
@@ -318,7 +322,7 @@
                       :msg (error->msg (first (:errors data)))})
             {:opts {:class "notification error-card"
                     :close-fn (fn [_]
-                                (om/update! data :errors #{}))}}))
+                                (raise! data :nav/clear-errors nil))}}))
         (dom/svg #js {:id "graph"}
           (dom/g #js {}))))
     om/IDidMount
