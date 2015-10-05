@@ -43,14 +43,27 @@
 ;; ====================================================================== 
 ;; Update
 
+(def error->msg* 
+  {:graph/empty-nodes "We found nothing to graph"
+   :project/parse-error "We couldn't read your project.clj"
+   :nav/search-error "There was a problem while searching"})
+
+(defn error->msg [error]
+  (if (string? error)
+    error
+    (error->msg* error)))
+
 (defn update-state [data [tag msg]]
   (case tag
     :project/start
-    (let [srcs (:srcs msg)
-          graph (deps/depgraph (:platform (:project data)) srcs)]
-      (-> data
-        (assoc :graph graph :buffer graph)
-        (assoc-in [:project :srcs] srcs)))
+    (try
+      (let [srcs (:srcs msg)
+            graph (deps/depgraph (:platform (:project data)) srcs)]
+        (-> data
+          (assoc :graph graph :buffer graph :errors #{})
+          (assoc-in [:project :srcs] srcs)))
+      (catch :default e
+        (assoc data :errors #{(.-message e)})))
 
     ;; TODO: cleanup with just
     :project/add
@@ -71,7 +84,7 @@
                          set)]
               (update-state data' [:project/start {:srcs srcs}]))
             (catch :default e
-              (assoc-in data' [:project :error] (.-message e)))))
+              (assoc data' :errors #{:project/parse-error}))))
         (catch :default _
           (update data :project
             #(merge % {:root path :platform platform})))))
@@ -212,24 +225,17 @@
             "Explore"))))))
 
 (defn srcs-component [data owner]
-  (reify
-    om/IInitState
-    (init-state [_]
-      {:error-on? true})
-    om/IRenderState
-    (render-state [_ {:keys [error-on?]}]
-      (dom/div #js {:className "center-container"}
-        (when error-on?
-          (om/build error-card
-            (assoc data
-              :error {:title "Blorgons!"
-                      :msg (str "We couldn't read your project.clj"
-                             #_(when-let [error (:error (:project data))]
-                               (str ": " error)))})
-            {:opts {:class "float-box center error-card"
-                    :close-fn (fn [_]
-                                (om/set-state! owner :error-on? false))}}))
-        (om/build dir-explorer data)))))
+  (om/component
+    (dom/div #js {:className "center-container"}
+      (when-not (empty? (:errors data))
+        (om/build error-card
+          (assoc data
+            :error {:title "Blorgons!"
+                    :msg (error->msg (first (:errors data)))})
+          {:opts {:class "float-box center error-card"
+                  :close-fn (fn [_]
+                              (raise! data :nav/clear-errors nil))}}))
+      (om/build dir-explorer data))))
 
 ;; ====================================================================== 
 ;; Graph Screen
@@ -283,8 +289,7 @@
                   :title "Enter a grep regex and I will highlight the ns that match"
                   :placeholder "highlight ns with grep"}})))))
 
-(def error->msg {:graph/empty-nodes "We found nothing to graph"
-                 :nav/search-error "There was a problem while searching"})
+
 
 (defn graph [buffer owner]
   (letfn [(draw! []
@@ -313,7 +318,8 @@
           (om/build error-card
             (assoc data
               :error {:title "Blorgons!"
-                      :msg (error->msg (first (:errors data)))})
+                      :msg (let [e (first (:errors data))]
+                             )})
             {:opts {:class "notification error-card"
                     :close-fn (fn [_]
                                 (raise! data :nav/clear-errors nil))}}))
