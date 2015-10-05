@@ -86,7 +86,7 @@
     (update graph :nodes
       (partial mapv #(assoc % :highlight (contains? highlighted (:name %)))))))
 
-(defn update-state [[tag msg] data]
+(defn update-state [data [tag msg]]
   (case tag
     :project/start
     (let [srcs (:srcs msg)
@@ -112,7 +112,7 @@
                               (project/parse project-string))
                          (map (partial deps/join-paths path))
                          set)]
-              (update-state [:project/start {:srcs srcs}] data'))
+              (update-state data' [:project/start {:srcs srcs}]))
             (catch js/Object e
               (assoc-in data' [:project :error] (.-message e)))))
         (catch js/Object _
@@ -130,8 +130,9 @@
     
     :nav/highlight (assoc-in data [:nav :highlight] msg)
     
-    :nav/clear-highlighted (update-state [:nav/draw! nil]
-                             (assoc-in data [:nav :highlighted] #{}))
+    :nav/clear-highlighted (-> data
+                             (assoc-in [:nav :highlighted] #{})
+                             (update-state [:nav/draw! nil]))
     
     :nav/add-error (update data :errors #(conj % msg))
     
@@ -139,23 +140,24 @@
     
     :nav/search-error (assoc data :errors #{:nav/search-error})
 
-    :nav/files-found (update-state [:nav/draw! nil]
-                       (assoc-in data [:nav :highlighted]
+    :nav/files-found (-> data 
+                       (assoc-in [:nav :highlighted]
                          (->> (js->clj msg)
                            (remove empty?)
                            (map file->ns-name)
-                           set)))
+                           set))
+                       (update-state [:nav/draw! nil]))
     
     :nav/draw! (let [graph (-> (:graph data)
                              (filter-graph (str/split (:ns (:nav data)) " "))
                              (highlight-graph (:highlighted (:nav data))))]
                  (if (valid-graph? graph)
-                   (update-state [:nav/graph->buffer graph] data)
-                   (update-state [:nav/add-error :graph/empty-nodes] data)))))
+                   (update-state data [:nav/graph->buffer graph])
+                   (update-state data [:nav/add-error :graph/empty-nodes])))))
 
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
-  (om/transact! data (partial update-state [tag msg])))
+  (om/transact! data #(update-state % [tag msg])))
 
 ;; ====================================================================== 
 ;; Components
