@@ -46,11 +46,6 @@
 ;; ====================================================================== 
 ;; Update
 
-(defn call? [f]
-  (try
-    (f)
-    (catch js/Object _ nil)))
-
 (defn update-state [data [tag msg]]
   (case tag
     :project/start
@@ -172,15 +167,14 @@
 (defn dir-item [item owner {:keys [click-fn]}]
   (om/component
     (dom/li nil
-      (let [id (new-id)
-            label (deps/file-name (:name item))]
+      (let [id (new-id)]
         (dom/span nil
           (dom/input #js {:id id 
                           :className "folder-list__item"
                           :type "checkbox"
                           :checked (:selected? item)
                           :onClick click-fn})
-          (dom/label #js {:htmlFor id} label))))))
+          (dom/label #js {:htmlFor id} (deps/file-name (:name item))))))))
 
 (defn ls->srcs [ls]
   (->> ls 
