@@ -5,37 +5,14 @@
             [clojure.tools.namespace.track :as track]
             [clojure.tools.namespace.dependency :as dep]))
 
-(def path (js/require "path"))
+;; ======================================================================  
+;; Helpers
 
-(def fs (js/require "fs"))
-
-(defn file->folder [p]
-  (path.dirname p))
-
-(defn join-paths [& args]
-  (apply path.join args))
-
-(defn list-files [dir]
-  (mapv (partial join-paths dir) (into-array (fs.readdirSync dir))))
-
-(defn dir? [d]
-  (try
-    (.isDirectory (fs.lstatSync d))
-    (catch js/Object _
-      false)))
-
-(defn file-name [p]
-  (.-name (path.parse p)))
-
-(defn list-dirs [dir]
-  (vec (filter dir? (list-files dir))))
-
-(defn read-file [file]
-  (fs.readFileSync file "utf8"))
-
-;; TODO: move to deps
 (defn file->ns-name [f]
   (-> f file/read-file-ns-decl rest first))
+
+;; ====================================================================== 
+;; Dependency graph 
 
 (defn platform->ext [platform]
   {:pre [(keyword platform)]}
@@ -46,7 +23,10 @@
     find/clj))
 
 (defn depgraph
-  ([srcs] (depgraph :cljs srcs))
+  "Constructs a graph - {:nodes [{:name foo.bar}]
+                         :edges [{:source foo.bar :target foo.baz}]}
+  from a set of source-paths."
+  ([srcs] (depgraph nil srcs))
   ([platform srcs]
    (let [exts (platform->ext platform) 
          source-fs (apply set/union
@@ -69,7 +49,9 @@
 (defn valid-graph? [graph]
   (not (empty? (:nodes graph))))
 
-(defn filter-graph [graph ns]
+(defn filter-graph
+  "Removes from the graph the nodes and edges that match the namespaces in ns"
+  [graph ns]
   (letfn [(starts-with-any? [s]
             (->> ns
               (map #(re-find (js/RegExp. %) s))
@@ -84,7 +66,9 @@
       (update :nodes (comp vec (partial remove node-matches?)))
       (update :edges (comp vec (partial remove edge-matches?))))))
 
-(defn highlight-graph [graph highlighted]
+(defn highlight-graph
+  "Adds :highlight true to the nodes in the graph that are also in highlighted"
+  [graph highlighted]
   {:pre [(map? graph) (set? highlighted)]}
   (let [highlighted (set (map name highlighted))]
     (update graph :nodes

@@ -1,6 +1,7 @@
 (ns constable.core
   (:import [goog.ui IdGenerator])
   (:require [clojure.string :as str]
+            [cljs.node.io :as io]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [constable.tree :as tree]
@@ -58,9 +59,9 @@
     ;; TODO: cleanup with just
     :project/add
     (let [{:keys [file platform]} msg 
-          path (deps/file->folder file)] 
+          path (io/file->folder file)] 
       (try
-        (let [project-string (deps/read-file file)
+        (let [project-string (io/read-file file)
               project-name (project/parse-name project-string)
               data' (update data :project
                       #(merge % {:root path
@@ -70,7 +71,7 @@
             (let [srcs (->> (if (= :clj platform)
                               (project/parse-main-srcs project-string)
                               (project/parse project-string))
-                         (map (partial deps/join-paths path))
+                         (map (partial io/join-paths path))
                          set)]
               (update-state data' [:project/start {:srcs srcs}]))
             (catch js/Object e
@@ -174,7 +175,7 @@
                           :type "checkbox"
                           :checked (:selected? item)
                           :onClick click-fn})
-          (dom/label #js {:htmlFor id} (deps/file-name (:name item))))))))
+          (dom/label #js {:htmlFor id} (io/file-name (:name item))))))))
 
 (defn ls->srcs [ls]
   (->> ls 
@@ -208,12 +209,12 @@
       (dom/h3 #js {:className "blue-box__subtitle"} (:title error))
       (dom/p nil (:msg error)))))
 
-(defn explorer [data owner]
+(defn dir-explorer [data owner]
   (reify
     om/IInitState
     (init-state [_]
       {:error-on? true
-       :ls (->> (deps/list-dirs (:root (:project data)))
+       :ls (->> (io/list-dirs (:root (:project data)))
              (mapv (fn [f] {:name f :selected? (src? f)})))})
     om/IRenderState
     (render-state [_ {:keys [ls error-on?]}]
@@ -348,7 +349,7 @@
       
       (and (not (empty? (:root (:project data))))
            (empty? (:srcs (:project data))))
-      (om/build explorer data)
+      (om/build dir-explorer data)
 
       :else
       (om/build graph-explorer data))))
