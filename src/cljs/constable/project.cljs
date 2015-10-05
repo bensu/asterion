@@ -43,11 +43,12 @@
   (.log js/console (parse-name "(defproject org.omcljs/om \"0.9.0-SNAPSHOT)")))
 
 (defn parse-main-srcs [project-string]
+  {:pre [(string? project-string)]
+   :post [(set? %) (every? string? %)]}
   (let [re #":source-paths"]
     (->> (extract-positions project-string re)
       first
       (extract-exp-at project-string re)
-      (filter string?)
       set)))
 
 (defn parse-builds-srcs [project-string]

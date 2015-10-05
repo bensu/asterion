@@ -92,7 +92,7 @@
     (let [srcs (:srcs msg)
           graph (make-graph (:platform (:project data)) srcs)]
       (-> data
-        (assoc :graph graph)
+        (assoc :graph graph :buffer graph)
         (assoc-in [:project :srcs] srcs)))
 
     ;; TODO: cleanup with just
@@ -264,7 +264,7 @@
             (assoc data
               :error {:title "Blorgons!"
                       :msg (str "We couldn't read your pom.xml/project.clj"
-                             (when-let [error (:error (:project data))]
+                             #_(when-let [error (:error (:project data))]
                                (str ": " error)))})
             {:opts {:class "float-box center error-card"
                     :close-fn (fn [_]
