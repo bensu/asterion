@@ -165,17 +165,34 @@
         (dom/p nil "To get started, open your project.clj for:")
         (om/build platform data)))))
 
-(defn dir-item [item owner {:keys [click-fn]}]
+(defn icon-button [{:keys [icon-class title]} owner {:keys [click-fn]}]
   (om/component
-    (dom/li nil
-      (let [id (new-id)]
-        (dom/span nil
-          (dom/input #js {:id id 
-                          :className "folder-list__item"
-                          :type "checkbox"
-                          :checked (:selected? item)
-                          :onClick click-fn})
-          (dom/label #js {:htmlFor id} (io/file-name (:name item))))))))
+    (dom/i #js {:className (str icon-class " fa")
+                :title title 
+                :onClick (if (fn? click-fn)
+                           click-fn
+                           identity)})))
+
+(defn clear-button [data owner]
+  (om/component
+    (om/build icon-button {:title "Clear Project"
+                           :icon-class "fa-reply float-right-corner clear-btn"}
+      {:opts {:click-fn (fn [_]
+                          (raise! data :project/clear nil))}})))
+
+(defn error-card [{:keys [error] :as data} owner {:keys [close-fn class]}]
+  (om/component
+    (dom/div #js {:className class}
+      (om/build icon-button {:icon-class "fa-times float-right-corner clear-btn"
+                             :title "Dismiss"}
+        {:opts {:click-fn close-fn}})
+      (dom/h3 #js {:className "blue-box__subtitle"} (:title error))
+      (dom/p nil (:msg error)))))
+
+(defn src?
+  "Tries to guess if the dir-name is a source directory"
+  [dir-name]
+  (some? (re-find #"src" dir-name)))
 
 (defn ls->srcs [ls]
   (->> ls 
@@ -183,41 +200,80 @@
     (map :name)
     set))
 
-(defn clear-button [data owner]
-  (om/component
-    (dom/i #js {:className "fa fa-reply clear-btn float-right-corner"
-                :title "Clear Project"
-                :onClick (fn [_] (raise! data :project/clear nil))})))
+(defn root->list-dir [root]
+  (->> (io/list-dirs root)
+       (mapv (fn [f] {:name f}))))
 
-(defn close-button [data owner {:keys [close-fn]}]
-  (om/component
-    (dom/i #js {:className "fa fa-times clear-btn float-right-corner"
-                :title "Dismiss"
-                :onClick (if (fn? close-fn)
-                           close-fn
-                           identity)})))
+(declare list-dir)
 
-(defn src?
-  "Tries to guess if the dir-name is a source directory"
-  [dir-name]
-  (some? (re-find #"src" dir-name)))
+(defn dir-item [{:keys [srcs dir]} owner {:keys [click-fn]}]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:expanded? false
+       :ls (root->list-dir (:name dir))})
+    om/IRenderState
+    (render-state [_ {:keys [ls expanded?]}]
+      (dom/li nil
+        (let [id (new-id)]
+          (dom/span nil
+            (dom/input #js {:id id 
+                            :className "folder-list__item"
+                            :type "checkbox"
+                            :checked (contains? srcs (:name dir)) 
+                            :onClick (partial click-fn (:name dir))})
+            (dom/label #js {:htmlFor id} (io/file-name (:name dir)))
+            (om/build icon-button {:title "Expand directory"
+                                   :icon-class "fa-chevron-down"}
+              {:opts {:click-fn (fn [_]
+                                  (om/update-state! owner :expanded? not))}})
+            (when expanded?
+              (om/build list-dir {:srcs srcs :ls ls} {:opts {:click-fn click-fn}}))))))))
 
-(defn error-card [{:keys [error] :as data} owner {:keys [close-fn class]}]
+(defn list-dir [{:keys [srcs ls]} owner opts]
   (om/component
-    (dom/div #js {:className class}
-      (om/build close-button data {:opts {:close-fn close-fn}})
-      (dom/h3 #js {:className "blue-box__subtitle"} (:title error))
-      (dom/p nil (:msg error)))))
+    (apply dom/ul #js {:className "folder-list"} 
+      (map-indexed 
+        (fn [i dir]
+          (om/build dir-item {:dir dir :srcs srcs} {:opts opts}))
+        ls))))
 
 (defn dir-explorer [data owner]
   (reify
     om/IInitState
     (init-state [_]
-      {:error-on? true
-       :ls (->> (io/list-dirs (:root (:project data)))
-             (mapv (fn [f] {:name f :selected? (src? f)})))})
+      (let [ls (root->list-dir (:root (:project data)))]
+        {:ls ls
+         :srcs (set (filter src? (map :name ls)))}))
     om/IRenderState
-    (render-state [_ {:keys [ls error-on?]}]
+    (render-state [_ {:keys [ls srcs]}]
+      (dom/div #js {:className "float-box blue-box center"}
+        (om/build clear-button data)
+        (dom/h3 #js {:className "blue-box__subtitle"} "Source Paths")
+        (dom/p nil "Would you mind selecting the source folders?")
+        (if (empty? (:name (:project data)))
+          (dom/strong nil (:root (:project data)))
+          (dom/h3 #js {:className "blue-box__title"} (:name (:project data))))
+        (om/build list-dir {:ls ls :srcs srcs}
+          {:opts {:click-fn (fn [dir-name _]
+                              (om/update-state! owner :srcs
+                                #(if (contains? % dir-name)
+                                   (disj % dir-name)
+                                   (conj % dir-name))))}})
+        (dom/div #js {:className "btn-container--center"} 
+          (dom/div
+            #js {:className "btn--green btn-center"
+                 :onClick (fn [_]
+                            (raise! data :project/start {:srcs srcs}))}
+            "Explore"))))))
+
+(defn srcs-component [data owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:error-on? true})
+    om/IRenderState
+    (render-state [_ {:keys [error-on?]}]
       (dom/div #js {:className "center-container"}
         (when error-on?
           (om/build error-card
@@ -229,28 +285,7 @@
             {:opts {:class "float-box center error-card"
                     :close-fn (fn [_]
                                 (om/set-state! owner :error-on? false))}}))
-        (dom/div #js {:className "float-box blue-box center"}
-          (om/build clear-button data)
-          (dom/h3 #js {:className "blue-box__subtitle"} "Source Paths")
-          (dom/p nil "Would you mind selecting the source folders?")
-          (if (empty? (:name (:project data)))
-            (dom/strong nil (:root (:project data)))
-            (dom/h3 #js {:className "blue-box__title"} (:name (:project data))))
-          (apply dom/ul #js {:className "folder-list"} 
-            (map-indexed 
-              (fn [i dir]
-                (om/build dir-item dir
-                  {:opts {:click-fn (fn [_]
-                                      (om/update-state! owner
-                                        [:ls i :selected?] not))}}))
-              ls))
-          (dom/div #js {:className "btn-container--center"} 
-            (dom/div
-              #js {:className "btn--green btn-center"
-                   :onClick (fn [_]
-                              (raise! data :project/start
-                                {:srcs (ls->srcs (om/get-state owner :ls))}))}
-              "Explore")))))))
+        (om/build dir-explorer data)))))
 
 (defn nav-input [data owner {:keys [value-key placeholder title
                                     on-change on-enter]}]
@@ -349,7 +384,7 @@
       
       (and (not (empty? (:root (:project data))))
            (empty? (:srcs (:project data))))
-      (om/build dir-explorer data)
+      (om/build srcs-component data)
 
       :else
       (om/build graph-explorer data))))
