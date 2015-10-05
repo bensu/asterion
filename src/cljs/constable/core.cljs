@@ -210,26 +210,31 @@
   (reify
     om/IInitState
     (init-state [_]
-      {:expanded? false
+      {:expand? false
        :ls (root->list-dir (:name dir))})
     om/IRenderState
-    (render-state [_ {:keys [ls expanded?]}]
-      (dom/li nil
-        (let [id (new-id)]
-          (dom/span nil
-            (dom/input #js {:id id 
-                            :className "folder-list__item"
-                            :type "checkbox"
-                            :checked (contains? srcs (:name dir)) 
-                            :onClick (partial click-fn (:name dir))})
-            (dom/label #js {:htmlFor id} (io/file-name (:name dir)))
-            (when-not (empty? ls)
-              (om/build icon-button {:title "Expand directory"
-                                     :icon-class "fa-chevron-down"}
-                {:opts {:click-fn (fn [_]
-                                    (om/update-state! owner :expanded? not))}}))
-            (when expanded?
-              (om/build list-dir {:srcs srcs :ls ls} {:opts opts}))))))))
+    (render-state [_ {:keys [ls expand?]}]
+      (let [selected? (contains? srcs (:name dir))]
+        (dom/li nil
+          (let [id (new-id)]
+            (dom/span nil
+              (dom/input #js {:id id 
+                              :className "folder-list__item"
+                              :type "checkbox"
+                              :checked selected? 
+                              :onClick (partial click-fn (:name dir))})
+              (dom/label #js {:htmlFor id
+                              :title (if selected?
+                                       "Unselect directory"
+                                       "Select directory")}
+                (io/file-name (:name dir)))
+              (when-not (empty? ls)
+                (om/build icon-button {:title "Expand directory"
+                                       :icon-class "fa-chevron-down"}
+                  {:opts {:click-fn (fn [_]
+                                      (om/update-state! owner :expand? not))}}))
+              (when expand?
+                (om/build list-dir {:srcs srcs :ls ls} {:opts opts})))))))))
 
 (defn list-dir [{:keys [srcs ls]} owner opts]
   (om/component
