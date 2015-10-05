@@ -27,10 +27,8 @@ constable.tree.nodeToGroup = function(name) {
     return name.split("\.")[0];
 };
 
-constable.tree.Graph = function(nsOpts, json) {
+constable.tree.Graph = function(json) {
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
-
-   var highlightNs = nsOpts.highlighted;
 
    var allColors = constable.tree.colors.slice(0);
    var nodeColors = {};
@@ -46,7 +44,7 @@ constable.tree.Graph = function(nsOpts, json) {
        }
        var hgStyle = "";
        var labelStyle = "";
-       if (highlightNs && (goog.array.contains(highlightNs, node.name))) {
+       if (node.highlight) {
            labelStyle = "fill:#f0f1eb";
            hgStyle = "fill:black;";
        } 

@@ -42,22 +42,28 @@
   (.log js/console (parse-name "(defproject komunike \"0.9.0-SNAPSHOT)"))
   (.log js/console (parse-name "(defproject org.omcljs/om \"0.9.0-SNAPSHOT)")))
 
+(defn parse-main-srcs [project-string]
+  (let [re #":source-paths"]
+    (->> (extract-positions project-string re)
+      first
+      (extract-exp-at project-string re)
+      (filter string?)
+      set)))
+
+(defn parse-builds-srcs [project-string]
+  (let [re #":cljsbuild"]
+    (->> (extract-positions project-string re)
+      (map (partial extract-exp-at project-string re))
+      ;; First :cljsbuild occurrence (mulitple
+      ;; profiles,multiple builds) 
+      first
+      :builds
+      normalize-builds
+      ;; ;; First build out all the possible builds
+      first
+      :source-paths
+      set)))
+
 (defn parse [project-string]
-  (let [re #":cljsbuild"
-        build-srcs (->> (extract-positions project-string re)
-                     (map (partial extract-exp-at project-string re))
-                     ;; First :cljsbuild occurrence (mulitple
-                     ;; profiles,multiple builds) 
-                     first
-                     :builds
-                     normalize-builds
-                     ;; ;; First build out all the possible builds
-                     first
-                     :source-paths
-                     set)
-        re #":source-paths"
-        main-srcs (->> (extract-positions project-string re)
-                    first
-                    (extract-exp-at project-string re)
-                    set)]
-    (set/union main-srcs build-srcs)))
+  (set/union (parse-main-srcs project-string) 
+             (parse-builds-srcs project-string)))

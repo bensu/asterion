@@ -35,6 +35,7 @@
 (def init-state {:nav {:ns ""
                        :highlight "" ;; can be local state
                        :highlighted #{}}
+                 :buffer {}
                  :graph {}
                  :errors #{}
                  :project {:root ""
@@ -61,65 +62,6 @@
     (f)
     (catch js/Object _ nil)))
 
-(defn update-state [[tag msg] data]
-  (case tag
-    :project/start
-    (let [srcs (:srcs msg)
-          graph (make-graph (:platform data) srcs)]
-      (-> data
-        (assoc :graph graph)
-        (assoc-in [:project :srcs] srcs)))
-
-    ;; TODO: cleanup with just
-    :project/add
-    (let [{:keys [file platform]} msg 
-          path (deps/file->folder file)] 
-      (try
-        (let [project-string (deps/read-file file)
-              project-name (project/parse-name project-string)
-              data' (update data :project
-                      #(merge % {:root path
-                                 :name project-name
-                                 :platform platform}))]
-          (try
-            (let [srcs (->> (project/parse project-string)
-                         (map (partial deps/join-paths path))
-                         set)]
-              (update-state [:project/start {:srcs srcs}] data'))
-            (catch js/Object _ data')))
-        (catch js/Object _
-          (update data :project
-            #(merge % {:root path :platform platform})))))
-
-    :project/clear init-state
-    
-    :project/platform (assoc-in data [:project :platform] msg)
-
-    :nav/ns (assoc-in data [:nav :ns] msg)
-    
-    :nav/highlight (assoc-in data [:nav :highlight] msg)
-    
-    :nav/clear-highlighted (assoc-in data [:nav :highlighted] #{})
-    
-    :nav/add-error (update data :errors #(conj % msg))
-    
-    :nav/clear-errors (assoc data :errors #{})
-    
-    :nav/search-error (assoc data :errors #{:nav/search-error})
-
-    :nav/files-found (assoc-in data [:nav :highlighted]
-                       (->> (js->clj msg)
-                         (remove empty?)
-                         (map file->ns-name)
-                         set))))
-
-(defn raise! [data tag msg]
-  {:pre [(keyword? tag) (om/cursor? data)]}
-  (om/transact! data (partial update-state [tag msg])))
-
-;; ====================================================================== 
-;; Components
-
 (defn valid-graph? [graph]
   (not (empty? (:nodes graph))))
 
@@ -138,14 +80,86 @@
       (update :nodes (comp vec (partial remove node-matches?)))
       (update :edges (comp vec (partial remove edge-matches?))))))
 
-;; TODO: handle no graph - validation 
-(defn draw! [data]
-  (let [graph (filter-graph (:graph data) (str/split (:ns (:nav data)) " "))]
-    (if (valid-graph? graph)
-      (tree/drawTree "#graph"
-        (clj->js {:highlighted (:highlighted (:nav data))})
-        (clj->js graph))
-      (raise! data :nav/add-error :graph/empty-nodes))))
+(defn highlight-graph [graph highlighted]
+  {:pre [(map? graph) (set? highlighted)]}
+  (let [highlighted (set (map name highlighted))]
+    (update graph :nodes
+      (partial mapv #(assoc % :highlight (contains? highlighted (:name %)))))))
+
+(defn update-state [[tag msg] data]
+  (case tag
+    :project/start
+    (let [srcs (:srcs msg)
+          graph (make-graph (:platform (:project data)) srcs)]
+      (-> data
+        (assoc :graph graph)
+        (assoc-in [:project :srcs] srcs)))
+
+    ;; TODO: cleanup with just
+    :project/add
+    (let [{:keys [file platform]} msg 
+          path (deps/file->folder file)] 
+      (try
+        (let [project-string (deps/read-file file)
+              project-name (project/parse-name project-string)
+              data' (update data :project
+                      #(merge % {:root path
+                                 :name project-name
+                                 :platform platform}))]
+          (try
+            (let [srcs (->> (if (= :clj platform)
+                              (project/parse-main-srcs project-string)
+                              (project/parse project-string))
+                         (map (partial deps/join-paths path))
+                         set)]
+              (update-state [:project/start {:srcs srcs}] data'))
+            (catch js/Object e
+              (assoc-in data' [:project :error] (.-message e)))))
+        (catch js/Object _
+          (update data :project
+            #(merge % {:root path :platform platform})))))
+
+    :project/clear init-state
+    
+    ;; No longer used
+    :project/platform (assoc-in data [:project :platform] msg)
+
+    :nav/graph->buffer (assoc data :buffer msg)
+
+    :nav/ns (assoc-in data [:nav :ns] msg)
+    
+    :nav/highlight (assoc-in data [:nav :highlight] msg)
+    
+    :nav/clear-highlighted (update-state [:nav/draw! nil]
+                             (assoc-in data [:nav :highlighted] #{}))
+    
+    :nav/add-error (update data :errors #(conj % msg))
+    
+    :nav/clear-errors (assoc data :errors #{})
+    
+    :nav/search-error (assoc data :errors #{:nav/search-error})
+
+    :nav/files-found (update-state [:nav/draw! nil]
+                       (assoc-in data [:nav :highlighted]
+                         (->> (js->clj msg)
+                           (remove empty?)
+                           (map file->ns-name)
+                           set)))
+    
+    :nav/draw! (let [graph (-> (:graph data)
+                             (filter-graph (str/split (:ns (:nav data)) " "))
+                             (highlight-graph (:highlighted (:nav data))))]
+                 (if (valid-graph? graph)
+                   (update-state [:nav/graph->buffer graph] data)
+                   (update-state [:nav/add-error :graph/empty-nodes] data)))))
+
+(defn raise! [data tag msg]
+  {:pre [(keyword? tag) (om/cursor? data)]}
+  (om/transact! data (partial update-state [tag msg])))
+
+;; ====================================================================== 
+;; Components
+
 
 (defn button [platform f {:keys [value label] :as item}]
   (dom/div #js {:className "btn--green"
@@ -247,7 +261,9 @@
           (om/build error-card
             (assoc data
               :error {:title "Blorgons!"
-                      :msg "We couldn't read your pom.xml/project.clj"})
+                      :msg (str "We couldn't read your pom.xml/project.clj"
+                             (when-let [error (:error (:project data))]
+                               (str ": " error)))})
             {:opts {:class "float-box center error-card"
                     :close-fn (fn [_]
                                 (om/set-state! owner :error-on? false))}}))
@@ -296,8 +312,7 @@
           (raise! data :nav/search-error error)))
       (register! "search-success"
         (fn [fs]
-          (raise! data :nav/files-found fs)
-          (draw! data))))
+          (raise! data :nav/files-found fs))))
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
@@ -307,7 +322,7 @@
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
-                  :on-enter (fn [_] (draw! data))
+                  :on-enter (fn [_] (raise! data :nav/draw! nil))
                   :value-key :ns
                   :placeholder "filter ns"}})
         (om/build nav-input (:nav data)
@@ -316,20 +331,35 @@
                               (let [v (.. e -target -value)]
                                 (if (empty? v)
                                   (do
-                                    (raise! data :nav/clear-highlighted nil)
-                                    (draw! data))
+                                    (raise! data :nav/clear-highlighted nil))
                                   (do
                                     (.send ipc "request-search"
                                       (clj->js (vec (:srcs (:project data))))
-                                      (:highlight data))))))
+                                      (:highlight (:nav data)))))))
                   :value-key :highlight
                   :placeholder "highlight ns"}})))))
 
 (def error->msg {:graph/empty-nodes "We found nothing to graph"
                  :nav/search-error "There was a problem while searching"})
 
+(defn graph [buffer owner]
+  (letfn [(draw! []
+            (when-not (empty? @buffer)
+              (tree/drawTree "#graph" (clj->js @buffer))))]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/svg #js {:id "graph"}
+          (dom/g #js {})))
+      om/IDidUpdate
+      (did-update [_ _ _]
+        (draw!))
+      om/IDidMount
+      (did-mount [_]
+        (draw!)))))
+
 ;; TODO: should show a loader
-(defn graph [data owner]
+(defn graph-explorer [data owner]
   (reify
     om/IRender
     (render [_]
@@ -343,12 +373,7 @@
             {:opts {:class "notification error-card"
                     :close-fn (fn [_]
                                 (raise! data :nav/clear-errors nil))}}))
-        (dom/svg #js {:id "graph"}
-          (dom/g #js {}))))
-    om/IDidMount
-    (did-mount [_]
-      (when-not (empty? (:graph @data))
-        (draw! data)))))
+        (om/build graph (:buffer data))))))
 
 ;; TODO: should be a multimethod
 (defn main [data owner]
@@ -362,7 +387,7 @@
       (om/build explorer data)
 
       :else
-      (om/build graph data))))
+      (om/build graph-explorer data))))
 
 (defn init! []
   (om/root main app-state {:target (.getElementById js/document "app")}))
