@@ -167,7 +167,7 @@
 
 (defn icon-button [{:keys [icon-class title]} owner {:keys [click-fn]}]
   (om/component
-    (dom/i #js {:className (str icon-class " fa")
+    (dom/i #js {:className (str icon-class " fa clickable")
                 :title title 
                 :onClick (if (fn? click-fn)
                            click-fn
@@ -216,26 +216,26 @@
     (render-state [_ {:keys [ls expand?]}]
       (let [selected? (contains? srcs (:name dir))]
         (dom/li #js {:className "file-item"} 
-          (let [id (new-id)]
-            (dom/span nil 
-              (dom/input #js {:id id 
-                              :className "folder-list__item"
-                              :type "checkbox"
-                              :checked selected? 
-                              :onClick (partial click-fn (:name dir))})
-              (dom/label #js {:htmlFor id
-                              :title (if selected?
-                                       "Unselect directory"
-                                       "Select directory")}
-                (io/file-name (:name dir)))
-              (when-not (empty? ls)
-                (om/build icon-button {:title "Expand directory"
-                                       :icon-class "expand-icon fa-chevron-down"}
-                  {:opts {:click-fn (fn [_]
-                                      (om/update-state! owner :expand? not))}}))
-              (dom/div #js {:className "divider"} nil)
-              (when expand?
-                (om/build list-dir {:srcs srcs :ls ls} {:opts opts})))))))))
+          (dom/span #js {:className (str "clickable "
+                                      (if selected?
+                                        "file-item__text--activated"
+                                        "file-item__text"))
+                         :onClick (partial click-fn (:name dir))
+                         :title (if selected?
+                                  "Unselect directory"
+                                  "Select directory")}
+            (io/file-name (:name dir)))
+          (when-not (empty? ls)
+            (om/build icon-button {:title "Expand directory"
+                                   :icon-class (str "fa-chevron-down " 
+                                                 (if expand?
+                                                   "expand-icon--active"
+                                                   "expand-icon"))}
+              {:opts {:click-fn (fn [_]
+                                  (om/update-state! owner :expand? not))}}))
+          (dom/div #js {:className "divider"} nil)
+          (when expand?
+            (om/build list-dir {:srcs srcs :ls ls} {:opts opts})))))))
 
 (defn list-dir [{:keys [srcs ls]} owner opts]
   (om/component

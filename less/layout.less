@@ -219,11 +219,49 @@ input::-moz-input-placeholder {
     margin-right: 10px;
 }
 
+.file--activate {
+    color: white;
+    font-weight: bold;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
 .file-item {
     padding-top: 1px;
 }
 
+.file-item__text {
+    .clickable;
+    font-weight: lighter;
+    &:hover {
+        .file--activate;
+    }
+    margin-right: 7px;
+}
+
+.file-item__text--activated {
+    .file-item__text;
+    .file--activate;
+    &:hover {
+        font-weight: initial;
+    }
+}
+
+.expand-activate {
+    color: @whiteGhost;
+}
 .expand-icon {
+    color: fade(@whiteGhost,70%);
     font-size: 0.75em;
+    &:hover {
+        .expand-activate;
+    }
+}
+
+.expand-icon--active {
+    .expand-icon;
+    .expand-activate;
 }
 
