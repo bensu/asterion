@@ -1,5 +1,4 @@
 (ns constable.core
-  (:import [goog.ui IdGenerator])
   (:require [clojure.string :as str]
             [cljs.node.io :as io]
             [om.core :as om :include-macros true]
@@ -7,7 +6,9 @@
             [constable.tree :as tree]
             [constable.deps :as deps]
             [constable.search :as search]
-            [constable.project :as project]))
+            [constable.project :as project]
+            [constable.dir :as dir]
+            [constable.components :as components]))
 
 (enable-console-print!)
 
@@ -22,11 +23,6 @@
   (when-not (contains? @ipc-callbacks k)
     (swap! ipc-callbacks assoc k f)
     (.on ipc k f)))
-
-(def id-generator (IdGenerator.))
-
-(defn new-id []
-  (.getNextUniqueId id-generator))
 
 ;; ====================================================================== 
 ;; Model
@@ -74,9 +70,9 @@
                          (map (partial io/join-paths path))
                          set)]
               (update-state data' [:project/start {:srcs srcs}]))
-            (catch js/Object e
+            (catch :default e
               (assoc-in data' [:project :error] (.-message e)))))
-        (catch js/Object _
+        (catch :default _
           (update data :project
             #(merge % {:root path :platform platform})))))
 
@@ -121,8 +117,7 @@
   (om/transact! data #(update-state % [tag msg])))
 
 ;; ====================================================================== 
-;; Components
-
+;; Project Screen 
 
 (defn button [platform f {:keys [value label] :as item}]
   (dom/div #js {:className "btn--green"
@@ -165,93 +160,34 @@
         (dom/p nil "To get started, open your project.clj for:")
         (om/build platform data)))))
 
-(defn icon-button [{:keys [icon-class title]} owner {:keys [click-fn]}]
-  (om/component
-    (dom/i #js {:className (str icon-class " fa clickable")
-                :title title 
-                :onClick (if (fn? click-fn)
-                           click-fn
-                           identity)})))
+;; ====================================================================== 
+;; Sources Screen
 
 (defn clear-button [data owner]
   (om/component
-    (om/build icon-button {:title "Clear Project"
-                           :icon-class "fa-reply float-right-corner clear-btn"}
+    (om/build components/icon-button
+      {:title "Clear Project"
+       :icon-class "fa-reply float-right-corner clear-btn"}
       {:opts {:click-fn (fn [_]
                           (raise! data :project/clear nil))}})))
 
 (defn error-card [{:keys [error] :as data} owner {:keys [close-fn class]}]
   (om/component
     (dom/div #js {:className class}
-      (om/build icon-button {:icon-class "fa-times float-right-corner clear-btn"
-                             :title "Dismiss"}
+      (om/build components/icon-button
+        {:icon-class "fa-times float-right-corner clear-btn"
+         :title "Dismiss"}
         {:opts {:click-fn close-fn}})
       (dom/h3 #js {:className "blue-box__subtitle"} (:title error))
       (dom/p nil (:msg error)))))
-
-(defn src?
-  "Tries to guess if the dir-name is a source directory"
-  [dir-name]
-  (some? (re-find #"src" dir-name)))
-
-(defn ls->srcs [ls]
-  (->> ls 
-    (filter :selected?)
-    (map :name)
-    set))
-
-(defn root->list-dir [root]
-  (->> (io/list-dirs root)
-       (mapv (fn [f] {:name f}))))
-
-(declare list-dir)
-
-(defn dir-item [{:keys [srcs dir]} owner {:keys [click-fn] :as opts}]
-  (reify
-    om/IInitState
-    (init-state [_]
-      {:expand? false
-       :ls (root->list-dir (:name dir))})
-    om/IRenderState
-    (render-state [_ {:keys [ls expand?]}]
-      (let [selected? (contains? srcs (:name dir))]
-        (dom/li #js {:className "file-item"} 
-          (dom/span #js {:className (str "clickable "
-                                      (if selected?
-                                        "file-item__text--activated"
-                                        "file-item__text"))
-                         :onClick (partial click-fn (:name dir))
-                         :title (if selected?
-                                  "Unselect directory"
-                                  "Select directory")}
-            (io/file-name (:name dir)))
-          (when-not (empty? ls)
-            (om/build icon-button {:title "Expand directory"
-                                   :icon-class (str "fa-chevron-down " 
-                                                 (if expand?
-                                                   "expand-icon--active"
-                                                   "expand-icon"))}
-              {:opts {:click-fn (fn [_]
-                                  (om/update-state! owner :expand? not))}}))
-          (dom/div #js {:className "divider"} nil)
-          (when expand?
-            (om/build list-dir {:srcs srcs :ls ls} {:opts opts})))))))
-
-(defn list-dir [{:keys [srcs ls]} owner opts]
-  (om/component
-    (apply dom/ul #js {:className "folder-list"} 
-      (map-indexed 
-        (fn [i dir]
-          (om/build dir-item {:dir dir :srcs srcs} {:opts opts}))
-        ls))))
 
 (defn dir-explorer [data owner]
   (reify
     om/IInitState
     (init-state [_]
-      (let [ls (root->list-dir (:root (:project data)))]
+      (let [ls (dir/root->list-dir (:root (:project data)))]
         {:ls ls
-         :srcs (set (filter src? (map :name ls)))}))
+         :srcs (set (filter dir/src? (map :name ls)))}))
     om/IRenderState
     (render-state [_ {:keys [ls srcs]}]
       (dom/div #js {:className "float-box blue-box center"}
@@ -262,7 +198,7 @@
           (dom/strong nil (:root (:project data)))
           (dom/h3 #js {:className "blue-box__title"} (:name (:project data))))
         (dom/div #js {:className "div-explorer"}
-          (om/build list-dir {:ls ls :srcs srcs}
+          (om/build dir/list-dir {:ls ls :srcs srcs}
             {:opts {:click-fn (fn [dir-name _]
                                 (om/update-state! owner :srcs
                                   #(if (contains? % dir-name)
@@ -294,6 +230,9 @@
                     :close-fn (fn [_]
                                 (om/set-state! owner :error-on? false))}}))
         (om/build dir-explorer data)))))
+
+;; ====================================================================== 
+;; Graph Screen
 
 (defn nav-input [data owner {:keys [value-key placeholder title
                                     on-change on-enter]}]
@@ -335,14 +274,11 @@
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/highlight)
                   :on-enter (fn [e]
-                              (let [v (.. e -target -value)]
-                                (if (empty? v)
-                                  (do
-                                    (raise! data :nav/clear-highlighted nil))
-                                  (do
-                                    (.send ipc "request-search"
-                                      (clj->js (vec (:srcs (:project data))))
-                                      (:highlight (:nav data)))))))
+                              (if (empty? (.. e -target -value))
+                                (raise! data :nav/clear-highlighted nil)
+                                (.send ipc "request-search"
+                                  (clj->js (vec (:srcs (:project data))))
+                                  (:highlight (:nav data)))))
                   :value-key :highlight
                   :title "Enter a grep regex and I will highlight the ns that match"
                   :placeholder "highlight ns with grep"}})))))
@@ -382,6 +318,9 @@
                     :close-fn (fn [_]
                                 (raise! data :nav/clear-errors nil))}}))
         (om/build graph (:buffer data))))))
+
+;; ====================================================================== 
+;; Component Dispatcher
 
 ;; TODO: should be a multimethod
 (defn main [data owner]
