@@ -1,10 +1,8 @@
 (ns constable.core
   (:import [goog.ui IdGenerator])
   (:require [clojure.string :as str]
-            [goog.string :as gstr]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [clojure.tools.namespace.file :as file]
             [constable.tree :as tree]
             [constable.deps :as deps]
             [constable.search :as search]
@@ -48,49 +46,16 @@
 ;; ====================================================================== 
 ;; Update
 
-(defn make-graph [platform srcs]
-  (if (some? platform)
-    (deps/depgraph platform srcs)
-    (deps/depgraph srcs)))
-
-;; TODO: move to deps
-(defn file->ns-name [f]
-  (-> f file/read-file-ns-decl rest first))
-
 (defn call? [f]
   (try
     (f)
     (catch js/Object _ nil)))
 
-(defn valid-graph? [graph]
-  (not (empty? (:nodes graph))))
-
-(defn filter-graph [graph ns]
-  (letfn [(starts-with-any? [s]
-            (->> ns
-              (map #(re-find (js/RegExp. %) s))
-              (some some?)))
-          (node-matches? [node]
-            (starts-with-any? (name (:name node))))
-          (edge-matches? [edge]
-            (->> (vals (select-keys edge [:target :source]))
-              (map (comp starts-with-any? name))
-              (some true?)))]
-    (-> graph
-      (update :nodes (comp vec (partial remove node-matches?)))
-      (update :edges (comp vec (partial remove edge-matches?))))))
-
-(defn highlight-graph [graph highlighted]
-  {:pre [(map? graph) (set? highlighted)]}
-  (let [highlighted (set (map name highlighted))]
-    (update graph :nodes
-      (partial mapv #(assoc % :highlight (contains? highlighted (:name %)))))))
-
 (defn update-state [data [tag msg]]
   (case tag
     :project/start
     (let [srcs (:srcs msg)
-          graph (make-graph (:platform (:project data)) srcs)]
+          graph (deps/depgraph (:platform (:project data)) srcs)]
       (-> data
         (assoc :graph graph :buffer graph)
         (assoc-in [:project :srcs] srcs)))
@@ -144,14 +109,14 @@
                        (assoc-in [:nav :highlighted]
                          (->> (js->clj msg)
                            (remove empty?)
-                           (map file->ns-name)
+                           (map deps/file->ns-name)
                            set))
                        (update-state [:nav/draw! nil]))
     
     :nav/draw! (let [graph (-> (:graph data)
-                             (filter-graph (str/split (:ns (:nav data)) " "))
-                             (highlight-graph (:highlighted (:nav data))))]
-                 (if (valid-graph? graph)
+                             (deps/filter-graph (str/split (:ns (:nav data)) " "))
+                             (deps/highlight-graph (:highlighted (:nav data))))]
+                 (if (deps/valid-graph? graph)
                    (update-state data [:nav/graph->buffer graph])
                    (update-state data [:nav/add-error :graph/empty-nodes])))))
 
@@ -201,7 +166,7 @@
       (dom/div #js {:className "float-box blue-box center"}
         (dom/h1 #js {:className "blue-box__title"} "Constable")
         (dom/p nil "A tool to make and explore dependency graphs for Clojure(Script) projects.")
-        (dom/p nil "To get started, open your pom.xml/project.clj for:")
+        (dom/p nil "To get started, open your project.clj for:")
         (om/build platform data)))))
 
 (defn dir-item [item owner {:keys [click-fn]}]
@@ -263,7 +228,7 @@
           (om/build error-card
             (assoc data
               :error {:title "Blorgons!"
-                      :msg (str "We couldn't read your pom.xml/project.clj"
+                      :msg (str "We couldn't read your project.clj"
                              #_(when-let [error (:error (:project data))]
                                (str ": " error)))})
             {:opts {:class "float-box center error-card"
