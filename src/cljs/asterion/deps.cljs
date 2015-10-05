@@ -1,4 +1,4 @@
-(ns constable.deps 
+(ns asterion.deps 
   (:require [clojure.set :as set]
             [clojure.tools.namespace.file :as file]
             [clojure.tools.namespace.find :as find]

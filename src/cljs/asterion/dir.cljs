@@ -1,8 +1,8 @@
-(ns constable.dir
+(ns asterion.dir
   (:require [cljs.node.io :as io]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [constable.components :as components]))
+            [asterion.components :as components]))
 
 (defn src?
   "Tries to guess if the dir-name is a source directory"

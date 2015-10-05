@@ -1,5 +1,5 @@
-(defproject constable "0.1.0-alpha1"
-  :description "FIXME: write description"
+(defproject asterion "0.1.0-alpha1"
+  :description "Make and explore dependency graphs for Clojure(Script) projects."
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -32,9 +32,9 @@
   :profiles
   {:dev {:cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
                                     :compiler {:source-map true
-                                               :main "constable.dev"
+                                               :main "asterion.dev"
                                                :verbose true}
-                                    :figwheel {:on-jsload "constable.core/init!"}}}}
+                                    :figwheel {:on-jsload "asterion.core/init!"}}}}
 
          :plugins [[lein-ancient "0.6.7"]
                    [lein-kibit "0.1.2"]
@@ -43,7 +43,7 @@
    :production
    {:cljsbuild
     {:builds {:app {:compiler {:optimizations :advanced
-                               :main          "constable.prod"
+                               :main          "asterion.prod"
                                :cache-analysis false
                                :closure-defines {:goog.DEBUG false}
                                :externs ["node_modules/closurecompiler-externs/path.js"

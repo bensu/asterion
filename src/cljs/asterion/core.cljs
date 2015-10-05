@@ -1,14 +1,14 @@
-(ns constable.core
+(ns asterion.core
   (:require [clojure.string :as str]
             [cljs.node.io :as io]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [constable.tree :as tree]
-            [constable.deps :as deps]
-            [constable.search :as search]
-            [constable.project :as project]
-            [constable.dir :as dir]
-            [constable.components :as components]))
+            [asterion.tree :as tree]
+            [asterion.deps :as deps]
+            [asterion.search :as search]
+            [asterion.project :as project]
+            [asterion.dir :as dir]
+            [asterion.components :as components]))
 
 (enable-console-print!)
 
@@ -168,8 +168,8 @@
   (om/component
     (dom/div #js {:className "center-container"}
       (dom/div #js {:className "float-box blue-box center"}
-        (dom/h1 #js {:className "blue-box__title"} "Constable")
-        (dom/p nil "A tool to make and explore dependency graphs for Clojure(Script) projects.")
+        (dom/h1 #js {:className "blue-box__title"} "Asterion")
+        (dom/p nil "Make and explore dependency graphs for Clojure(Script) projects.")
         (dom/p nil "To get started, open your project.clj for:")
         (om/build platform data)))))
 
@@ -191,7 +191,9 @@
         {:icon-class "fa-times float-right-corner clear-btn"
          :title "Dismiss"}
         {:opts {:click-fn close-fn}})
-      (dom/h3 #js {:className "blue-box__subtitle"} (:title error))
+      (dom/h3 #js {:className "blue-box__subtitle"
+                   :title "A veces me equivoco y nos reimos buenamente los dos"}
+        (:title error))
       (dom/p nil (:msg error)))))
 
 (defn dir-explorer [data owner]
@@ -205,7 +207,9 @@
     (render-state [_ {:keys [ls srcs]}]
       (dom/div #js {:className "float-box blue-box center"}
         (om/build clear-button data)
-        (dom/h3 #js {:className "blue-box__subtitle"} "Source Paths")
+        (dom/h3 #js {:className "blue-box__subtitle"
+                     :title "Todas las partes de la casa están muchas veces, cualquier lugar es otro lugar."}
+          "Source Paths")
         (dom/p nil "Would you mind selecting the source folders?")
         (if (empty? (:name (:project data)))
           (dom/strong nil (:root (:project data)))
@@ -220,6 +224,7 @@
         (dom/div #js {:className "btn-container--center"} 
           (dom/div
             #js {:className "btn--green btn-center"
+                 :title "Ojalá me lleve a un lugar con menos galerías y menos puertas."
                  :onClick (fn [_]
                             (raise! data :project/start {:srcs srcs}))}
             "Explore"))))))
@@ -230,7 +235,7 @@
       (when-not (empty? (:errors data))
         (om/build error-card
           (assoc data
-            :error {:title "Blorgons!"
+            :error {:title "Error" 
                     :msg (error->msg (first (:errors data)))})
           {:opts {:class "float-box center error-card"
                   :close-fn (fn [_]
@@ -268,7 +273,7 @@
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
         (if (empty? (:name (:project data)))
-          (dom/h3 #js {:className "blue-box__title"} "Constable")
+          (dom/h3 #js {:className "blue-box__title"} "Asterion")
           (dom/h3 #js {:className "project-name"} (:name (:project data))))
         (om/build clear-button data)
         (om/build nav-input (:nav data)
@@ -317,9 +322,8 @@
         (when-not (empty? (:errors data))
           (om/build error-card
             (assoc data
-              :error {:title "Blorgons!"
-                      :msg (let [e (first (:errors data))]
-                             )})
+              :error {:title "Error" 
+                      :msg (error->msg (first (:errors data)))})
             {:opts {:class "notification error-card"
                     :close-fn (fn [_]
                                 (raise! data :nav/clear-errors nil))}}))

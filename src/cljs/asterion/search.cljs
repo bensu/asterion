@@ -1,4 +1,4 @@
-(ns constable.search)
+(ns asterion.search)
 
 (def results {})
 

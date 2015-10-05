@@ -1,39 +1,39 @@
-goog.provide('constable.tree');
+goog.provide('asterion.tree');
 
 goog.require('goog.array');
 goog.require('cljsjs.d3');
-goog.require('constable.search');
+goog.require('asterion.search');
 
-constable.tree.config = {w: 1600, h: 1200,
+asterion.tree.config = {w: 1600, h: 1200,
                          rx: 60, ry: 30,
                          fill: d3.scale.category20()};
 
 // TODO: svg should take the whole background
-constable.tree.svg = function(nodeId) {
+asterion.tree.svg = function(nodeId) {
     return d3.select(nodeId)
     		   .attr("width", 1535)
                    .attr("height", 876);
-                // .attr("width", constable.tree.config.w)
-        	// .attr("height", constable.tree.config.h);
+                // .attr("width", asterion.tree.config.w)
+        	// .attr("height", asterion.tree.config.h);
 };
 
-constable.tree.formatNs = function(s) {
+asterion.tree.formatNs = function(s) {
     return s.split(".").join("\n");
 };
 
-constable.tree.colors = palette('tol',11); 
+asterion.tree.colors = palette('tol',11); 
 
-constable.tree.nodeToGroup = function(name) {
+asterion.tree.nodeToGroup = function(name) {
     return name.split("\.")[0];
 };
 
-constable.tree.Graph = function(json) {
+asterion.tree.Graph = function(json) {
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
 
-   var allColors = constable.tree.colors.slice(0);
+   var allColors = asterion.tree.colors.slice(0);
    var nodeColors = {};
    json.nodes.forEach(function(node) {
-       var group = constable.tree.nodeToGroup(node.name);
+       var group = asterion.tree.nodeToGroup(node.name);
        var color;
        if (typeof nodeColors[group] !== "undefined") {
            color = nodeColors[group];
@@ -59,15 +59,15 @@ constable.tree.Graph = function(json) {
    });
    g.nodes().forEach(function(v) {
       var node = g.node(v);
-      node.rx = constable.tree.config.rx;
-      node.ry = constable.tree.config.ry;
+      node.rx = asterion.tree.config.rx;
+      node.ry = asterion.tree.config.ry;
    });
    return g;
 };
 
-constable.tree.drawTree = function(nodeId, nsOpts, json) {
-  var g = constable.tree.Graph(nsOpts, json);
-  var root = constable.tree.svg(nodeId);
+asterion.tree.drawTree = function(nodeId, nsOpts, json) {
+  var g = asterion.tree.Graph(nsOpts, json);
+  var root = asterion.tree.svg(nodeId);
   var inner = root.select("g");
   var zoom = d3.behavior.zoom().on("zoom", function() {
       inner.attr("transform", "translate(" + d3.event.translate + ")" +

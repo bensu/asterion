@@ -1,4 +1,4 @@
-(ns constable.project
+(ns asterion.project
   (:require [clojure.string :as str]
             [clojure.set :as set]
             [cljs.tools.reader.edn :as edn]))
@@ -37,6 +37,7 @@
       (extract-exp-at project-string re)
       name)))
 
+(defn parse-pom-name [pom-string])
 ;; TODO: move to test
 (comment
   (.log js/console (parse-name "(defproject komunike \"0.9.0-SNAPSHOT)"))
