@@ -68,8 +68,8 @@
 (defn filter-graph [graph ns]
   (letfn [(starts-with-any? [s]
             (->> ns
-              (map (partial gstr/caseInsensitiveStartsWith s))
-              (some true?)))
+              (map #(re-find (js/RegExp. %) s))
+              (some some?)))
           (node-matches? [node]
             (starts-with-any? (name (:name node))))
           (edge-matches? [edge]
@@ -292,11 +292,12 @@
                                 {:srcs (ls->srcs (om/get-state owner :ls))}))}
               "Explore")))))))
 
-(defn nav-input [data owner {:keys [value-key placeholder
+(defn nav-input [data owner {:keys [value-key placeholder title
                                     on-change on-enter]}]
   (om/component
     (dom/input #js {:className "blue-input"
                     :type "text"
+                    :title title
                     :placeholder placeholder 
                     :value (get data value-key)
                     :onKeyDown (fn [e]
@@ -325,6 +326,7 @@
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
                   :on-enter (fn [_] (raise! data :nav/draw! nil))
+                  :title "I'll remove the ns with names that match these words"
                   :value-key :ns
                   :placeholder "filter ns"}})
         (om/build nav-input (:nav data)
@@ -339,7 +341,8 @@
                                       (clj->js (vec (:srcs (:project data))))
                                       (:highlight (:nav data)))))))
                   :value-key :highlight
-                  :placeholder "highlight ns"}})))))
+                  :title "Enter a grep regex and I will highlight the ns that match"
+                  :placeholder "highlight ns with grep"}})))))
 
 (def error->msg {:graph/empty-nodes "We found nothing to graph"
                  :nav/search-error "There was a problem while searching"})
