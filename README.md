@@ -1,6 +1,8 @@
 # Asterion 
 
-A tool to make and explore dependency graphs for Clojure(Script) projects.
+Make and explore dependency graphs for Clojure(Script) projects.
+
+> La casa es del tamaño del mundo; mejor dicho, es el mundo.
 
 NOTE: do not use this! It is under development and has dependencies
 that have not been published.
