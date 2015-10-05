@@ -215,9 +215,9 @@
     om/IRenderState
     (render-state [_ {:keys [ls expand?]}]
       (let [selected? (contains? srcs (:name dir))]
-        (dom/li nil
+        (dom/li #js {:className "file-item"} 
           (let [id (new-id)]
-            (dom/span nil
+            (dom/span nil 
               (dom/input #js {:id id 
                               :className "folder-list__item"
                               :type "checkbox"
@@ -230,9 +230,10 @@
                 (io/file-name (:name dir)))
               (when-not (empty? ls)
                 (om/build icon-button {:title "Expand directory"
-                                       :icon-class "fa-chevron-down"}
+                                       :icon-class "expand-icon fa-chevron-down"}
                   {:opts {:click-fn (fn [_]
                                       (om/update-state! owner :expand? not))}}))
+              (dom/div #js {:className "divider"} nil)
               (when expand?
                 (om/build list-dir {:srcs srcs :ls ls} {:opts opts})))))))))
 
@@ -260,12 +261,13 @@
         (if (empty? (:name (:project data)))
           (dom/strong nil (:root (:project data)))
           (dom/h3 #js {:className "blue-box__title"} (:name (:project data))))
-        (om/build list-dir {:ls ls :srcs srcs}
-          {:opts {:click-fn (fn [dir-name _]
-                              (om/update-state! owner :srcs
-                                #(if (contains? % dir-name)
-                                   (disj % dir-name)
-                                   (conj % dir-name))))}})
+        (dom/div #js {:className "div-explorer"}
+          (om/build list-dir {:ls ls :srcs srcs}
+            {:opts {:click-fn (fn [dir-name _]
+                                (om/update-state! owner :srcs
+                                  #(if (contains? % dir-name)
+                                     (disj % dir-name)
+                                     (conj % dir-name))))}}))
         (dom/div #js {:className "btn-container--center"} 
           (dom/div
             #js {:className "btn--green btn-center"

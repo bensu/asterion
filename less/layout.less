@@ -57,10 +57,12 @@ html, body {
     right: 10px;
 }
 
+@boxWidth: 400px;
+
 .float-box {
     .box;
     .BoxShadowHelper(2);
-    width: 400px;
+    width: @boxWidth; 
     position: relative;
     margin-bottom: 8px;
 }
@@ -180,9 +182,17 @@ input::-moz-input-placeholder {
     background: @greenAtlantis;
 }
 
+
 .btn--green--active {
     .btn;
     background: darken(@greenAtlantis,15%);
+}
+
+.divider {
+    margin-top: 2px;
+    display: block;
+    height: 1px;
+    background-color: fade(@whiteGhost,50%);
 }
 
 // Platform Buttons
@@ -196,6 +206,10 @@ input::-moz-input-placeholder {
 
 // Folder List
 
+.div-explorer {
+    width: 0.90 * @boxWidth; 
+}
+
 .folder-list {
     list-style: none;
     padding-left: 10px;
@@ -203,5 +217,13 @@ input::-moz-input-placeholder {
 
 .folder-list__item {
     margin-right: 10px;
+}
+
+.file-item {
+    padding-top: 1px;
+}
+
+.expand-icon {
+    font-size: 0.75em;
 }
 
