@@ -206,7 +206,7 @@
 
 (declare list-dir)
 
-(defn dir-item [{:keys [srcs dir]} owner {:keys [click-fn]}]
+(defn dir-item [{:keys [srcs dir]} owner {:keys [click-fn] :as opts}]
   (reify
     om/IInitState
     (init-state [_]
@@ -223,12 +223,13 @@
                             :checked (contains? srcs (:name dir)) 
                             :onClick (partial click-fn (:name dir))})
             (dom/label #js {:htmlFor id} (io/file-name (:name dir)))
-            (om/build icon-button {:title "Expand directory"
-                                   :icon-class "fa-chevron-down"}
-              {:opts {:click-fn (fn [_]
-                                  (om/update-state! owner :expanded? not))}})
+            (when-not (empty? ls)
+              (om/build icon-button {:title "Expand directory"
+                                     :icon-class "fa-chevron-down"}
+                {:opts {:click-fn (fn [_]
+                                    (om/update-state! owner :expanded? not))}}))
             (when expanded?
-              (om/build list-dir {:srcs srcs :ls ls} {:opts {:click-fn click-fn}}))))))))
+              (om/build list-dir {:srcs srcs :ls ls} {:opts opts}))))))))
 
 (defn list-dir [{:keys [srcs ls]} owner opts]
   (om/component
