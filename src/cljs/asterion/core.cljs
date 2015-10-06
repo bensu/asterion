@@ -68,10 +68,13 @@
     ;; TODO: cleanup with just
     :project/add
     (let [{:keys [file platform]} msg 
-          path (io/file->folder file)] 
+          path (io/file->folder file)
+          ext (io/extension file)] 
       (try
         (let [project-string (io/read-file file)
-              project-name (project/parse-name project-string)
+              project-name (if (= ".xml" ext)
+                             (project/parse-pom-name project-string)
+                             (project/parse-project-name project-string))
               data' (update data :project
                       #(merge % {:root path
                                  :name project-name

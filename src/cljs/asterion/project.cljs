@@ -3,9 +3,12 @@
             [clojure.set :as set]
             [cljs.tools.reader.edn :as edn]))
 
+(def parse-xml (js/require "xml-parse-from-string"))
+
 (enable-console-print!)
 
 (defn re-pos [re s]
+  {:pre [(not (string? re)) (string? s)]}
   (let [re (js/RegExp. (.-source re) "g")]
     (loop [res {}]
       (if-let [m (.exec re s)]
@@ -20,7 +23,7 @@
 (defn extract-exp-at [project-string re pos]
   (-> project-string
     (subs pos)
-    (str/replace re "" )
+    (str/replace re "")
     edn/read-string))
 
 (defn normalize-builds [builds]
@@ -29,7 +32,13 @@
     (vector? builds) builds 
     :else (throw (js/Error. "Builds should be maps or vectors"))))
 
-(defn parse-name [project-string]
+(defn parse-pom-name [pom-string]
+  (-> (parse-xml pom-string)
+      (.getElementsByTagName "artifactId")
+      (aget 0)
+      .-textContent))
+
+(defn parse-project-name [project-string]
   (let [re #"defproject"]
     (->> re
       (extract-positions project-string)
@@ -37,7 +46,9 @@
       (extract-exp-at project-string re)
       name)))
 
-(defn parse-pom-name [pom-string])
+(comment
+  (parse-pom-name "<project><artifactId>tools.namespace</artifactId></project>"))
+
 ;; TODO: move to test
 (comment
   (.log js/console (parse-name "(defproject komunike \"0.9.0-SNAPSHOT)"))

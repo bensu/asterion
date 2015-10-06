@@ -9,6 +9,9 @@
 (defn file->folder [p]
   (path.dirname p))
 
+(defn extension [p]
+  (path.extname p))
+
 (defn join-paths [& args]
   (apply path.join args))
 
