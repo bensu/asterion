@@ -4,8 +4,25 @@ Make and explore dependency graphs for Clojure(Script) projects.
 
 > La casa es del tamaño del mundo; mejor dicho, es el mundo.
 
-NOTE: do not use this! It is under development and has dependencies
-that have not been published.
+## Special Requirements 
+
+First install an experimental version of `tools.namespace`:
+
+```sh
+https://github.com/bensu/tools.namespace
+cd tools.namespace
+git checkout node
+mvn install
+```
+
+If it worked, you should have a `0.3.19-SNAPSHOT` folder under:
+
+```sh
+ls ~/.m2/repository/org/clojure/tools.namespace/
+```
+
+With `tools.namespace` installed you can start the Electron app as
+usual.
 
 ## Requirements
 

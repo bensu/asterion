@@ -159,20 +159,20 @@ grunt.registerTask('fresh-release', ['cljsbuild-prod', 'release']);
 var electronShell = {
   windows: {
     exeToRename: "electron.exe",
-    renamedExe:  "draft.exe",
+    renamedExe:  "asterion.exe",
     resources:   "resources",
     installExt:  "exe"
   },
   mac: {
     exeToRename: "Electron.app",
-    renamedExe:  "draft.app",
+    renamedExe:  "asterion.app",
     plist:       "Electron.app/Contents/Info.plist",
     resources:   "Electron.app/Contents/Resources",
     installExt:  "dmg"
   },
   linux: {
     exeToRename: "electron",
-    renamedExe:  "draft",
+    renamedExe:  "asterion",
     resources:   "resources"
   }
 }[os];
@@ -227,7 +227,7 @@ function prepRelease(build, paths) {
 }
 
 function copyElectronAndBuildToRelease(build, paths) {
-  grunt.log.writeln("\nCopying Electron and draft to release folder...");
+  grunt.log.writeln("\nCopying Electron and asterion to release folder...");
   grunt.log.writeln(paths.electron + " ==> " + paths.release.cyan);
   grunt.log.writeln(paths.devApp + " ==> " + paths.resources.cyan);
   cp('-r', paths.electron + "/", paths.release);
@@ -293,8 +293,8 @@ function finalizeMacRelease(build, paths) {
   grunt.log.writeln("\nChanging Electron app icon and bundle name...");
   var plist = path.join(__dirname, paths.release, electronShell.plist);
   exec("defaults write " + plist + " CFBundleIconFile logo.icns");
-  exec("defaults write " + plist + " CFBundleDisplayName draft");
-  exec("defaults write " + plist + " CFBundleName draft");
+  exec("defaults write " + plist + " CFBundleDisplayName asterion");
+  exec("defaults write " + plist + " CFBundleName asterion");
   exec("defaults write " + plist + " CFBundleIdentifier com.example");
   mv(paths.exeToRename, paths.renamedExe);
   var app = paths.renamedExe;
@@ -302,7 +302,7 @@ function finalizeMacRelease(build, paths) {
   grunt.log.writeln("\nCreating dmg image...");
   grunt.config.set("appdmg", {
     options: {
-      "title": "draft",
+      "title": "asterion",
       "background": "scripts/dmg/TestBkg.png",
       "icon-size": 80,
       "contents": [
