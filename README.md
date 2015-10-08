@@ -4,7 +4,24 @@ Make and explore dependency graphs for Clojure(Script) projects.
 
 > La casa es del tamaño del mundo; mejor dicho, es el mundo.
 
-## Special Requirements 
+Asterion will run `tools.namespace` against your project sources,
+generate a dependency graph, and then graph it using something similar
+to [graphviz](https://github.com/cpettitt/dagre-d3). To get your
+project sources, it will try to parse your `project.clj` and if that
+doesn't work (it mostly doesn't!) it will ask you to input the sources
+manually. Once the graph is displayed, you can navigate it (zoom),
+filter out namespaces by their names, and highlight namespaces that
+contain a certain word in their file (full text search with grep).
+
+## Usage
+
+The binary is currently only released for Linux. Follow
+[this](https://github.com/bensu/asterion/releases/tag/v0.1.0-alpha1)
+instructions to run it.
+
+## Developing
+
+### Special Requirements
 
 First install an experimental version of `tools.namespace`:
 
@@ -24,7 +41,7 @@ ls ~/.m2/repository/org/clojure/tools.namespace/
 With `tools.namespace` installed you can start the Electron app as
 usual.
 
-## Requirements
+### Requirements
 
 * JDK 1.7+
 * Leiningen 2.5.1
@@ -35,7 +52,7 @@ On Mac/Linux, installing io.js using [Node Version Manager](https://github.com/c
 
 This project uses Electron v0.31.0. Please check [Electron's GH site](https://github.com/atom/electron) for the latest version. The version is specified in `Gruntfile.js` under the `Grunt Config` section.
 
-## Setup
+### Setup
 
 On Mac/Linux:
 
@@ -79,6 +96,6 @@ grunt launch
 
 You can edit the `src/cljs/draft/core.cljs` file and the changes should show up in the electron app without the need to re-launch.
 
-## Dependencies
+### Dependencies
 
 Node dependencies are in `package.json` file. Bower dependencies are in `bower.json` file. Clojure/ClojureScript dependencies are in `project.clj`.
