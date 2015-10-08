@@ -46,7 +46,8 @@
 (def error->msg* 
   {:graph/empty-nodes "We found nothing to graph"
    :project/parse-error "We couldn't read your project.clj"
-   :nav/search-error "There was a problem while searching"})
+   :nav/search-error "There was a problem while searching"
+   :nav/search-not-found "No matches found"})
 
 (defn error->msg [error]
   (if (string? error)
@@ -112,6 +113,8 @@
     :nav/clear-errors (assoc data :errors #{})
     
     :nav/search-error (assoc data :errors #{:nav/search-error})
+
+    :nav/search-not-found (assoc data :errors #{:nav/search-not-found})
 
     :nav/files-found (-> data 
                        (assoc-in [:nav :highlighted]
@@ -266,8 +269,12 @@
   (reify
     om/IWillMount
     (will-mount [_]
+      (register! "search-not-found"
+        (fn []
+          (raise! data :nav/search-not-found nil)))
       (register! "search-error"
         (fn [error]
+          (.log js/console error)
           (raise! data :nav/search-error error)))
       (register! "search-success"
         (fn [fs]

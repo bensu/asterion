@@ -131,10 +131,12 @@ function grepWithFork(event, filenames, stringPattern) {
                + "' "
                + filenames.join(" ");
     child_process.exec(cmd, {maxBuffer: 200000000}, function(err, stdout) {
-        if (err) {
+        if (err && (err.code == 2)) {
             console.log("There was an error:\n");
             process.stdout.write(stdout);
             mainWindow.webContents.send('search-error',err);
+        } else if (err.code == 1) {
+            mainWindow.webContents.send('search-not-found');
         } else {
             mainWindow.webContents.send('search-success',stdout.split(/\n/));
         }
