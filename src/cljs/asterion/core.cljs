@@ -3,7 +3,6 @@
             [cljs.node.io :as io]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [cljsjs.d3]
             [asterion.tree :as tree]
             [asterion.deps :as deps]
             [asterion.search :as search]

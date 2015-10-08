@@ -17,37 +17,33 @@
 
   :min-lein-version "2.5.1"
 
-  :cljsbuild {:builds {:app {:source-paths ["src/cljs"]
-                             :compiler {:output-to     "app/js/p/app.js"
-                                        :output-dir    "app/js/p/out"
-                                        :asset-path    "js/p/out"
-                                        :optimizations :none
-                                        :pretty-print  true
-                                        :cache-analysis true}}}}
+  :cljsbuild
+  {:builds {:app {:source-paths ["src/cljs" "env/dev/cljs"]
+                  :figwheel {:on-jsload "asterion.core/init!"}
+                  :compiler {:output-to "app/js/p/app.js"
+                             :output-dir "app/js/p/out"
+                             :asset-path "js/p/out"
+                             :source-map true
+                             :main "asterion.dev"
+                             :verbose true
+                             :optimizations :none
+                             :pretty-print  true
+                             :cache-analysis true}}
+            :production
+            {:source-paths ["src/cljs" "env/prod/cljs"]
+             :compiler {:output-to "app/js/p/app.js"
+                        :optimizations :advanced
+                        :main "asterion.prod"
+                        :closure-defines {:goog.DEBUG false}
+                        :externs ["node_modules/closurecompiler-externs/path.js"
+                                  "node_modules/closurecompiler-externs/fs.js"
+                                  "externs/misc.js"]}}}}
 
   :clean-targets ^{:protect false} [:target-path "out" "app/js/p"]
 
   :figwheel {:css-dirs ["app/css"]}
 
-  :profiles
-  {:dev {:cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
-                                    :compiler {:source-map true
-                                               :main "asterion.dev"
-                                               :verbose true}
-                                    :figwheel {:on-jsload "asterion.core/init!"}}}}
-
-         :plugins [[lein-ancient "0.6.7"]
-                   [lein-kibit "0.1.2"]
-                   [lein-cljfmt "0.3.0"]
-                   [lein-figwheel "0.3.8"]]}
-   :production
-   {:cljsbuild
-    {:builds {:app {:compiler {:optimizations :advanced
-                               :main          "asterion.prod"
-                               :cache-analysis false
-                               :closure-defines {:goog.DEBUG false}
-                               :externs ["node_modules/closurecompiler-externs/path.js"
-                                         "node_modules/closurecompiler-externs/fs.js"
-                                         "externs/misc.js"]
-                               :pretty-print false}
-                    :source-paths ["env/prod/cljs"]}}}}})
+  :profiles {:dev {:plugins [[lein-ancient "0.6.7"]
+                             [lein-kibit "0.1.2"]
+                             [lein-cljfmt "0.3.0"]
+                             [lein-figwheel "0.3.8"]]}})

@@ -1,7 +1,6 @@
 goog.provide('asterion.tree');
 
 goog.require('goog.array');
-goog.require('cljsjs.d3');
 goog.require('asterion.search');
 
 asterion.tree.config = {w: 1600, h: 1200,
