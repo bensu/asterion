@@ -37,6 +37,7 @@
                         :closure-defines {:goog.DEBUG false}
                         :externs ["node_modules/closurecompiler-externs/path.js"
                                   "node_modules/closurecompiler-externs/fs.js"
+                                  "externs/dagre-d3.ext.js"
                                   "externs/misc.js"]}}}}
 
   :clean-targets ^{:protect false} [:target-path "out" "app/js/p"]
