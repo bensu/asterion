@@ -3,17 +3,16 @@ goog.provide('asterion.tree');
 goog.require('goog.array');
 goog.require('asterion.d3');
 
-asterion.tree.config = {w: 1600, h: 1200,
-                         rx: 60, ry: 30,
-                         fill: d3.scale.category20()};
+asterion.tree.config = {w: screen.width,
+                        h: screen.height,
+                        rx: 60,
+                        ry: 30,
+                        fill: d3.scale.category20()};
 
-// TODO: svg should take the whole background
 asterion.tree.svg = function(nodeId) {
     return d3.select(nodeId)
-    		   .attr("width", 1535)
-                   .attr("height", 876);
-                // .attr("width", asterion.tree.config.w)
-        	// .attr("height", asterion.tree.config.h);
+                .attr("width", asterion.tree.config.w)
+        	.attr("height", asterion.tree.config.h);
 };
 
 asterion.tree.formatNs = function(s) {
