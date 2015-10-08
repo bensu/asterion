@@ -3,7 +3,17 @@
             [clojure.set :as set]
             [cljs.tools.reader.edn :as edn]))
 
-(def parse-xml (js/require "xml-parse-from-string"))
+  ;; if (typeof window.DOMParser !== 'undefined') {
+  ;;   return function(str) {
+  ;;     var parser = new window.DOMParser()
+  ;;     return parser.parseFromString(str, 'application/xml')
+  ;;   }
+  ;; } 
+
+(defn parse-xml [s]
+  (let [constructor (.-DOMParser js/window)
+        parser (constructor.)]
+    (.parseFromString parser s "application/xml")))
 
 (enable-console-print!)
 
