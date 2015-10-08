@@ -3,9 +3,9 @@
             [cljs.node.io :as io]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
+            [asterion.d3]
             [asterion.tree :as tree]
             [asterion.deps :as deps]
-            [asterion.search :as search]
             [asterion.project :as project]
             [asterion.dir :as dir]
             [asterion.components :as components]))

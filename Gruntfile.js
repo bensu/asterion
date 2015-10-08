@@ -235,7 +235,7 @@ function copyElectronAndBuildToRelease(build, paths) {
 
   //delete extra resources
 
-  rm('-rf', path.join(paths.releaseApp, "js", "p", "out"));
+  // rm('-rf', path.join(paths.releaseApp, "js", "p", "out"));
 
 }
 
