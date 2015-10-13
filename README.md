@@ -13,10 +13,12 @@ manually. Once the graph is displayed, you can navigate it (zoom),
 filter out namespaces by their names, and highlight namespaces that
 contain a certain word in their file (full text search with grep).
 
+Here is an initial [demo](https://www.youtube.com/watch?v=NOJLmkIyS2A).
+
 ## Usage
 
 The binary is currently only released for Linux. Follow
-[this](https://github.com/bensu/asterion/releases/tag/v0.1.0-alpha1)
+[these](https://github.com/bensu/asterion/releases/tag/v0.1.0-alpha1)
 instructions to run it.
 
 ## Developing
