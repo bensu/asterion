@@ -11,6 +11,7 @@ figwheel_server.log
 /.lein-*
 /.nrepl-
 /app/js/p
+/resources/public/js/p
 /app/projects
 /.repl
 /out
