@@ -51,7 +51,7 @@ grunt.initConfig({
     
     default: {
       files: {
-        'app/css/main.min.css': 'less/main.less'
+        'resources/public/css/main.min.css': 'less/main.less'
       }
     }
   },
