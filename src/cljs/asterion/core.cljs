@@ -1,5 +1,6 @@
 (ns asterion.core
   (:require [clojure.string :as str]
+            [cljs.reader :as reader]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [asterion.d3]
@@ -50,6 +51,10 @@
     ;;       (assoc-in [:project :srcs] srcs)))
     ;;   (catch :default e
     ;;     (assoc data :errors #{(.-message e)})))
+
+    :graph/add (-> data
+                 (assoc :graph msg)
+                 (update-state [:nav/graph->buffer msg]))
 
     ;; TODO: cleanup with just
     ;; :project/add
@@ -150,6 +155,9 @@
           :items (mapv (fn [[v l]] {:value v :label l}) 
                    [[:clj "clj"] [:cljs "cljs"] [:cljc "both"]]))))))
 
+(def serial-project
+ "{:edges [{:source asterion.dir, :target asterion.components} {:source asterion.dir, :target cljs.node.io} {:source asterion.core, :target asterion.d3} {:source asterion.core, :target asterion.components} {:source asterion.core, :target asterion.project}], :nodes [{:name \"asterion.dir\"} {:name \"cljs.node.io\"} {:name \"asterion.core\"} {:name \"asterion.d3\"} {:name \"asterion.components\"} {:name \"asterion.project\"} {:name \"asterion.deps\"}]}")
+
 (defn select-project [data owner]
   (om/component
     (dom/div #js {:className "center-container"}
@@ -164,7 +172,7 @@
                                     (let [url (.. e -target -value)]
                                       (raise! data :project/url url)))})
         (dom/button #js {:onClick (fn [_]
-                                    (println (:url (:project data))))}
+                                    (raise! data :graph/add (reader/read-string serial-project)))}
           "Go")))))
 
 ;; ====================================================================== 
@@ -272,15 +280,8 @@
 ;; TODO: should be a multimethod
 (defn main [data owner]
   (om/component
-    (cond
-      (empty? (:root (:project data)))
+    (if (empty? (:graph data))
       (om/build select-project data)
-      
-      ;; (and (not (empty? (:root (:project data))))
-      ;;      (empty? (:srcs (:project data))))
-      ;; (om/build srcs-component data)
-
-      :else
       (om/build graph-explorer data))))
 
 (defn init! []
