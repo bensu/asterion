@@ -56,40 +56,10 @@
                  (assoc :graph msg)
                  (update-state [:nav/graph->buffer msg]))
 
-    ;; TODO: cleanup with just
-    ;; :project/add
-    ;; (let [{:keys [file platform]} msg 
-    ;;       path (io/file->folder file)
-    ;;       ext (io/extension file)] 
-    ;;   (try
-    ;;     (let [project-string (io/read-file file)
-    ;;           project-name (if (= ".xml" ext)
-    ;;                          (project/parse-pom-name project-string)
-    ;;                          (project/parse-project-name project-string))
-    ;;           data' (update data :project
-    ;;                   #(merge % {:root path
-    ;;                              :name project-name
-    ;;                              :platform platform}))]
-    ;;       (try
-    ;;         (let [srcs (->> (if (= :clj platform)
-    ;;                           (project/parse-main-srcs project-string)
-    ;;                           (project/parse project-string))
-    ;;                      (map (partial io/join-paths path))
-    ;;                      set)]
-    ;;           (update-state data' [:project/start {:srcs srcs}]))
-    ;;         (catch :default e
-    ;;           (assoc data' :errors #{:project/parse-error}))))
-    ;;     (catch :default _
-    ;;       (update data :project
-    ;;         #(merge % {:root path :platform platform})))))
-
     :project/url (assoc-in data [:project :url] msg)
 
     :project/clear init-state
     
-    ;; No longer used
-    :project/platform (assoc-in data [:project :platform] msg)
-
     :nav/graph->buffer (assoc data :buffer msg)
 
     :nav/ns (assoc-in data [:nav :ns] msg)
@@ -104,10 +74,6 @@
     
     :nav/clear-errors (assoc data :errors #{})
     
-    :nav/search-error (assoc data :errors #{:nav/search-error})
-
-    :nav/search-not-found (assoc data :errors #{:nav/search-not-found})
-
     ;; :nav/files-found (-> data 
     ;;                    (assoc-in [:nav :highlighted]
     ;;                      (->> (js->clj msg)
@@ -127,53 +93,6 @@
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
   (om/transact! data #(update-state % [tag msg])))
-
-;; ====================================================================== 
-;; Project Screen 
-
-(defn button [platform f {:keys [value label] :as item}]
-  (dom/div #js {:className "btn--green"
-                :onClick (partial f item)}
-    (or label value)))
-
-(defn buttons [{:keys [platform items] :as data} owner]
-  (reify
-    om/IRender
-    (render [_]
-      (apply dom/div #js {:className "platform--btns"} 
-        (butlast
-          (interleave
-            (map (partial button platform identity)
-              items)
-            (map (fn [_] (dom/br nil nil)) (range (count items)))))))))
-
-(defn platform [data owner]
-  (om/component
-    (dom/div #js {:className "platform--toggle"} 
-      (om/build buttons 
-        (assoc data 
-          :items (mapv (fn [[v l]] {:value v :label l}) 
-                   [[:clj "clj"] [:cljs "cljs"] [:cljc "both"]]))))))
-
-(def serial-project
- "{:edges [{:source asterion.dir, :target asterion.components} {:source asterion.dir, :target cljs.node.io} {:source asterion.core, :target asterion.d3} {:source asterion.core, :target asterion.components} {:source asterion.core, :target asterion.project}], :nodes [{:name \"asterion.dir\"} {:name \"cljs.node.io\"} {:name \"asterion.core\"} {:name \"asterion.d3\"} {:name \"asterion.components\"} {:name \"asterion.project\"} {:name \"asterion.deps\"}]}")
-
-(defn select-project [data owner]
-  (om/component
-    (dom/div #js {:className "center-container"}
-      (dom/div #js {:className "float-box blue-box center"}
-        (dom/h1 #js {:className "blue-box__title"} "Asterion")
-        (dom/p nil "Make and explore dependency graphs for Clojure projects.")
-        (dom/p nil "To get started, open your project.clj for:")
-        (dom/input #js {:type "url"
-                        :className "blue-input"
-                        :value (:url (:project data))
-                        :onChange (fn [e]
-                                    (let [url (.. e -target -value)]
-                                      (raise! data :project/url url)))})
-        (dom/button #js {:onClick (fn [_]
-                                    (raise! data :graph/add (reader/read-string serial-project)))}
-          "Go")))))
 
 ;; ====================================================================== 
 ;; Sources Screen
@@ -197,6 +116,46 @@
                    :title "A veces me equivoco y nos reimos buenamente los dos"}
         (:title error))
       (dom/p nil (:msg error)))))
+
+
+;; ====================================================================== 
+;; Project Screen 
+
+(defn button [platform f {:keys [value label] :as item}]
+  (dom/div #js {:className "btn--green"
+                :onClick (partial f item)}
+    (or label value)))
+
+(def serial-project
+  (reader/read-string
+    "{:edges [{:source asterion.dir, :target asterion.components} {:source asterion.dir, :target cljs.node.io} {:source asterion.core, :target asterion.d3} {:source asterion.core, :target asterion.components} {:source asterion.core, :target asterion.project}], :nodes [{:name \"asterion.dir\"} {:name \"cljs.node.io\"} {:name \"asterion.core\"} {:name \"asterion.d3\"} {:name \"asterion.components\"} {:name \"asterion.project\"} {:name \"asterion.deps\"}]}"))
+
+(defn select-project [data owner]
+  (om/component
+    (dom/div #js {:className "page center-container"}
+      (when-not (empty? (:errors data))
+        (om/build error-card
+          (assoc data
+            :error {:title "Error" 
+                    :msg (error->msg (first (:errors data)))})
+          {:opts {:class "notification error-card"
+                  :close-fn (fn [_]
+                              (raise! data :nav/clear-errors nil))}}))
+      (dom/div #js {:className "float-box blue-box center"}
+        (dom/h1 #js {:className "blue-box__title"} "Asterion")
+        (dom/p nil "Make and explore dependency graphs for Clojure projects.")
+        (dom/p nil "To get started, open your project.clj for:")
+        (dom/input #js {:type "url"
+                        :className "blue-input"
+                        :value (:url (:project data))
+                        :onChange (fn [e]
+                                    (let [url (.. e -target -value)]
+                                      (raise! data :project/url url)))})
+        (dom/button #js {:onClick (fn [_]
+                                    (if true 
+                                      (raise! data :graph/add serial-project)
+                                      (raise! data :nav/add-error "We couldn't load the project")))}
+          "Go")))))
 
 ;; ====================================================================== 
 ;; Graph Screen
@@ -229,17 +188,7 @@
                   :on-enter (fn [_] (raise! data :nav/draw! nil))
                   :title "I'll remove the ns with names that match these words"
                   :value-key :ns
-                  :placeholder "filter ns"}})
-        (om/build nav-input (:nav data)
-          {:opts {:on-change (partial raise! data :nav/highlight)
-                  :on-enter (fn [e]
-                              (if (empty? (.. e -target -value))
-                                (raise! data :nav/clear-highlighted nil)))
-                  :value-key :highlight
-                  :title "Enter a grep regex and I will highlight the ns that match"
-                  :placeholder "highlight ns with grep"}})))))
-
-
+                  :placeholder "filter ns"}})))))
 
 (defn graph [buffer owner]
   (letfn [(draw! []
