@@ -18,7 +18,7 @@
                  :buffer {}
                  :graph {}
                  :errors #{}
-                 :project {:root ""
+                 :project {:url ""
                            :name ""
                            :srcs #{} 
                            :platform nil}})
@@ -77,6 +77,8 @@
     ;;     (catch :default _
     ;;       (update data :project
     ;;         #(merge % {:root path :platform platform})))))
+
+    :project/url (assoc-in data [:project :url] msg)
 
     :project/clear init-state
     
@@ -153,9 +155,17 @@
     (dom/div #js {:className "center-container"}
       (dom/div #js {:className "float-box blue-box center"}
         (dom/h1 #js {:className "blue-box__title"} "Asterion")
-        (dom/p nil "Make and explore dependency graphs for Clojure(Script) projects.")
+        (dom/p nil "Make and explore dependency graphs for Clojure projects.")
         (dom/p nil "To get started, open your project.clj for:")
-        (om/build platform data)))))
+        (dom/input #js {:type "url"
+                        :className "blue-input"
+                        :value (:url (:project data))
+                        :onChange (fn [e]
+                                    (let [url (.. e -target -value)]
+                                      (raise! data :project/url url)))})
+        (dom/button #js {:onClick (fn [_]
+                                    (println (:url (:project data))))}
+          "Go")))))
 
 ;; ====================================================================== 
 ;; Sources Screen
