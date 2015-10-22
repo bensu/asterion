@@ -12,6 +12,7 @@
                  [org.clojure/tools.reader "0.10.0-alpha1"]
                  [leiningen-core "2.5.3"]
                  [cljsjs/d3 "3.5.5-3"]
+                 [clj-jgit "0.8.8"]
                  [org.omcljs/om "0.9.0"]]  
 
   :plugins [[lein-cljsbuild "1.1.0"]]
