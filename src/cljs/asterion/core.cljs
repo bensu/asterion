@@ -1,6 +1,7 @@
 (ns asterion.core
   (:require [clojure.string :as str]
             [cljs.reader :as reader]
+            [ajax.core :refer [GET POST]]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [asterion.d3]
@@ -55,7 +56,8 @@
 
     :graph/add (-> data
                  (assoc :graph msg)
-                 (update-state [:nav/graph->buffer msg]))
+                 (update-state [:nav/graph->buffer msg])
+                 (update-state [:nav/draw! nil]))
 
     :project/url (assoc-in data [:project :url] msg)
     
@@ -82,6 +84,7 @@
     :nav/draw! (let [g (-> (:graph data)
                          (deps/filter-graph (str/split (:ns (:nav data)) " "))
                          (deps/highlight-graph (:highlighted (:nav data))))]
+                 (println g)
                  (if (deps/valid-graph? g)
                    (update-state data [:nav/graph->buffer g])
                    (update-state data [:nav/add-error :graph/empty-nodes])))
@@ -153,15 +156,23 @@
         (if (:waiting? data)
           (dom/p nil "Processing project")
           (dom/button
-            #js {:onClick (fn [_]
-                            (raise! data :project/wait nil)
-                            (js/setTimeout
-                              (fn []
-                                (raise! data :project/done nil)
-                                (if true 
-                                  (raise! data :graph/add serial-project)
-                                  (raise! data :nav/add-error "We couldn't load the project")))
-                              1000))}
+            #js {:onClick
+                 (fn [_]
+                   (raise! data :project/wait nil)
+                   (let [url (:url (:project data))
+                         [user repo] (take-last 2 (str/split url "/"))]
+                     (GET (str "/repo/" user "/" repo)
+                       {:handler (fn [res]
+                                   (println (type res))
+                                   (println res)
+                                   (raise! data :project/done nil)
+                                   (raise! data :graph/add
+                                     (:graph (reader/read-string res))))
+                        :error-handler
+                        (fn [err]
+                          (println err)
+                          (raise! data :project/done nil)
+                          (raise! data :nav/add-error "We couldn't load the project"))})))}
             "Go"))))))
 
 ;; ====================================================================== 

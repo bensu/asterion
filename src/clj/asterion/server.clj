@@ -5,6 +5,7 @@
             [clj-jgit.util :as git-util]
             [compojure.core :refer :all]
             [compojure.route :as route]
+            [ring.middleware.params :as params]
             [ring.util.response :as response]
             [asterion.project :as project]))
 
@@ -15,7 +16,13 @@
   (let [repo-name (git-util/name-from-uri url)
         dir (io/file "tmp" (uuid) repo-name)
         repo (git/git-clone-full url (.getPath dir))]
+    (.deleteOnExit dir)
     (project/depgraph (project/parse-project (io/file dir "project.clj")))))
+
+(defn error-response [error]
+  {:status 500
+   :headers {"Content-Type" "application/edn"}
+   :body (pr-str {:error error})})
 
 (defn repo-handler [url]
   (try
@@ -23,11 +30,15 @@
      :headers {"Content-Type" "application/edn"}
      :body (pr-str {:graph (parse-url url)})}
     (catch Exception e
-      {:status 500
-       :headers {"Content-Type" "application/edn"}
-       :body (pr-str {:error e})})))
+      (error-response e))))
 
-(defroutes app
+(defroutes app-routes 
   (GET "/" _ (response/file-response "resources/public/index.html"))
-  (GET "/repo" {{url :url} :params} (repo-handler url))
+  (GET "/repo/:user/:repo" [user repo] 
+    (if (and (string? user) (string? repo))
+      (repo-handler (str "https://github.com/" user "/" repo ".git"))
+      (error-response (str "Bad params: " user repo))))
   (route/not-found "<h1>Page not found</h1>"))
+
+(def app (params/wrap-params app-routes))
+
