@@ -4,6 +4,7 @@
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [asterion.d3]
+            [asterion.deps :as deps]
             [asterion.tree :as tree]
             [asterion.project :as project]
             [asterion.components :as components]))
@@ -57,6 +58,10 @@
                  (update-state [:nav/graph->buffer msg]))
 
     :project/url (assoc-in data [:project :url] msg)
+    
+    :project/wait (assoc data :waiting? true)
+    
+    :project/done (assoc data :waiting? false)
 
     :project/clear init-state
     
@@ -74,21 +79,15 @@
     
     :nav/clear-errors (assoc data :errors #{})
     
-    ;; :nav/files-found (-> data 
-    ;;                    (assoc-in [:nav :highlighted]
-    ;;                      (->> (js->clj msg)
-    ;;                        (remove empty?)
-    ;;                        (map deps/file->ns-name)
-    ;;                        set))
-    ;;                    (update-state [:nav/draw! nil]))
--    
-    ;; :nav/draw! (let [graph (-> (:graph data)
-    ;;                          (deps/filter-graph (str/split (:ns (:nav data)) " "))
-    ;;                          (deps/highlight-graph (:highlighted (:nav data))))]
-    ;;              (if (deps/valid-graph? graph)
-    ;;                (update-state data [:nav/graph->buffer graph])
-    ;;                (update-state data [:nav/add-error :graph/empty-nodes])))
-))
+    :nav/draw! (let [g (-> (:graph data)
+                         (deps/filter-graph (str/split (:ns (:nav data)) " "))
+                         (deps/highlight-graph (:highlighted (:nav data))))]
+                 (if (deps/valid-graph? g)
+                   (update-state data [:nav/graph->buffer g])
+                   (update-state data [:nav/add-error :graph/empty-nodes])))
+    
+    ;; If action is unknonw, return data unchanged 
+    data))
 
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
@@ -151,11 +150,19 @@
                         :onChange (fn [e]
                                     (let [url (.. e -target -value)]
                                       (raise! data :project/url url)))})
-        (dom/button #js {:onClick (fn [_]
-                                    (if true 
-                                      (raise! data :graph/add serial-project)
-                                      (raise! data :nav/add-error "We couldn't load the project")))}
-          "Go")))))
+        (if (:waiting? data)
+          (dom/p nil "Processing project")
+          (dom/button
+            #js {:onClick (fn [_]
+                            (raise! data :project/wait nil)
+                            (js/setTimeout
+                              (fn []
+                                (raise! data :project/done nil)
+                                (if true 
+                                  (raise! data :graph/add serial-project)
+                                  (raise! data :nav/add-error "We couldn't load the project")))
+                              1000))}
+            "Go"))))))
 
 ;; ====================================================================== 
 ;; Graph Screen
