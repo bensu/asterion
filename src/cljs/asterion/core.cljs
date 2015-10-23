@@ -32,7 +32,7 @@
 ;; Update
 
 (def error->msg* 
-  {:graph/empty-nodes "We found nothing to graph"
+  {:graph/empty-nodes "We found nothing to graph after filtering"
    :project/parse-error "We couldn't read your project.clj"
    :nav/search-error "There was a problem while searching"
    :nav/search-not-found "No matches found"})
@@ -84,7 +84,6 @@
     :nav/draw! (let [g (-> (:graph data)
                          (deps/filter-graph (str/split (:ns (:nav data)) " "))
                          (deps/highlight-graph (:highlighted (:nav data))))]
-                 (println g)
                  (if (deps/valid-graph? g)
                    (update-state data [:nav/graph->buffer g])
                    (update-state data [:nav/add-error :graph/empty-nodes])))
