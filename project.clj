@@ -10,9 +10,10 @@
                  [org.clojure/clojurescript "1.7.122"]
                  [org.clojure/tools.namespace "0.3.19-SNAPSHOT"]
                  [org.clojure/tools.reader "0.10.0-alpha1"]
+                 [com.stuartsierra/component "0.2.3"]
                  [leiningen-core "2.5.3"]
                  [clj-jgit "0.8.8"]
-                 [ring/ring-core "1.4.0"]
+                 [ring "1.3.2"]
                  [compojure "1.4.0"]
                  [cljsjs/d3 "3.5.5-3"]
                  [org.omcljs/om "0.9.0"]
@@ -58,7 +59,7 @@
   :clean-targets ^{:protect false} [:target-path "out" "resources/public/js/p"]
 
   :figwheel {:css-dirs ["app/css"]
-             :ring-handler "asterion.server/app"}
+             :ring-handler "asterion.server/app-handler"}
 
   :profiles {:dev {:plugins [[lein-ancient "0.6.7"]
                              [lein-kibit "0.1.2"]
