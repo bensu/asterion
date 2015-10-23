@@ -1,6 +1,8 @@
 (ns asterion.server
   (:import [java.util UUID]
-           [org.apache.commons.io FileUtils])
+           [org.apache.commons.io FileUtils]
+           [org.eclipse.jgit.api.errors TransportException
+                                        InvalidRemoteException])
   (:require [clojure.java.io :as io]
             [com.stuartsierra.component :as component]
             [ring.middleware.params :as params]
@@ -15,27 +17,47 @@
 (defn uuid []
   (str (UUID/randomUUID)))
 
-(defn parse-url [url]
+(defn parse-url
+  "Given a git url (string) it will fetch the repository and try to return
+   a dependency graph for it. It may also return the following errors:
+
+  - {:error :no-project-file}
+  - {:error :project-not-found}
+  - {:error :project-protected}
+  - {:error #<Exception>} ;; unknown exception"
+  [url]
+  {:pre [(string? url)]}
   (let [repo-name (git-util/name-from-uri url)
-        dir (io/file "tmp" (str (uuid) repo-name))
-        repo (git/git-clone-full url (.getPath dir))
-        graph (project/depgraph (project/parse-project dir))]
-    (future
-      (FileUtils/deleteDirectory dir))
-    graph))
+        dir (io/file "tmp" (str (uuid) repo-name))]
+    (try
+      (git/git-clone-full url (.getPath dir))
+      (project/depgraph (project/parse-project dir))
+      (catch InvalidRemoteException _
+        {:error :project/not-found})
+      (catch TransportException _
+        {:error :project/protected})
+      (catch Exception e
+        {:error e})
+      (finally (future (FileUtils/deleteDirectory dir))))))
 
 (defn error-response [error]
   {:status 500
    :headers {"Content-Type" "application/edn"}
-   :body (pr-str {:error error})})
+   :body (pr-str error)})
+
+(defn ok-response [body]
+  {:status 200
+   :headers {"Content-Type" "application/edn"}
+   :body (pr-str body)})
 
 (defn repo-handler [url]
   (try
-    {:status 200
-     :headers {"Content-Type" "application/edn"}
-     :body (pr-str {:graph (parse-url url)})}
+    (let [graph (parse-url url)]
+      (if (contains? graph :error)
+        (error-response graph)
+        (ok-response {:graph graph})))
     (catch Exception e
-      (error-response e))))
+      (error-response {:error e}))))
 
 (defroutes app-routes 
   (GET "/" _ (response/file-response "resources/public/index.html"))

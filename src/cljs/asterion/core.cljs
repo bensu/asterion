@@ -34,8 +34,12 @@
 (def error->msg* 
   {:graph/empty-nodes "We found nothing to graph after filtering"
    :project/parse-error "We couldn't read your project.clj"
+   :project/not-found "We couldn't find the repository"
+   :project/protected "The repository is either protected or not there!"
+   :project/timeout "It took too long to talk to the server. We don't know what happened!"
    :nav/search-error "There was a problem while searching"
-   :nav/search-not-found "No matches found"})
+   :nav/search-not-found "No matches found"
+   :unknown-error "We are truly sorry but we don't know what happened."})
 
 (defn error->msg [error]
   (if (string? error)
@@ -121,6 +125,30 @@
    "https://github.com/bevuta/pepa"
    "https://github.com/overtone/overtone"])
 
+(defn error-handler [data err]
+  (raise! data :project/done nil)
+  (raise! data :nav/add-error
+    (try
+      (if (= :timeout (:failure err))
+        :project/timeout
+        (let [res (reader/read-string (:response err))]
+          (if (keyword? (:error res))
+            (:error res)
+            :unknown-error)))
+      (catch :default e
+        :unknown-error))))
+
+(defn start! [data e]
+  (raise! data :project/wait nil)
+  (let [url (:url (:project data))
+        [user repo] (take-last 2 (str/split url "/"))]
+    (GET (str "/repo/" user "/" repo)
+      {:handler (fn [res]
+                  (raise! data :project/done nil)
+                  (raise! data :graph/add
+                    (:graph (reader/read-string res))))
+       :error-handler (partial error-handler data)})))
+
 (defn button [label f]
   (dom/div #js {:className "btn--green"
                 :onClick f}
@@ -143,8 +171,11 @@
         (dom/p nil "Paste a link for a github repo")
         (dom/input #js {:type "url"
                         :className "blue-input"
-                        :placeholder "Ex: https://github.com/clojure/clojurescript"
+                        :placeholder (str "Ex: " (rand-nth examples))
                         :value (:url (:project data))
+                        :onKeyDown (fn [e]
+                                     (when (= "Enter" (.-key e))
+                                       (start! data e)))
                         :onChange (fn [e]
                                     (let [url (.. e -target -value)]
                                       (raise! data :project/url url)))})
@@ -152,21 +183,7 @@
         (if (:waiting? data)
           (dom/p nil "Processing project")
           (dom/div #js {:className "center-container"}
-            (button "Graph"
-              (fn [_]
-                (raise! data :project/wait nil)
-                (let [url (:url (:project data))
-                      [user repo] (take-last 2 (str/split url "/"))]
-                  (GET (str "/repo/" user "/" repo)
-                    {:handler (fn [res]
-                                (raise! data :project/done nil)
-                                (raise! data :graph/add
-                                  (:graph (reader/read-string res))))
-                     :error-handler
-                     (fn [err]
-                       (println err)
-                       (raise! data :project/done nil)
-                       (raise! data :nav/add-error "We couldn't load the project"))}))))))))))
+            (button "Graph" (partial start! data))))))))
 
 ;; ====================================================================== 
 ;; Graph Screen
