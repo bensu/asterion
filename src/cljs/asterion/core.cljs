@@ -37,6 +37,7 @@
    :project/not-found "We couldn't find the repository"
    :project/protected "The repository is either protected or not there!"
    :project/timeout "It took too long to talk to the server. We don't know what happened!"
+   :project/no-project-file "We couldn't find a project.clj in the repository top level (nested project.clj are not supported yet)"
    :nav/search-error "There was a problem while searching"
    :nav/search-not-found "No matches found"
    :unknown-error "We are truly sorry but we don't know what happened."})
@@ -122,8 +123,8 @@
    "https://github.com/aphyr/riemann"
    "https://github.com/metabase/metabase"
    "https://github.com/Engelberg/instaparse"
-   "https://github.com/bevuta/pepa"
-   "https://github.com/overtone/overtone"])
+   "https://github.com/overtone/overtone"
+   "https://github.com/juxt/yada"])
 
 (defn error-handler [data err]
   (raise! data :project/done nil)
@@ -139,6 +140,7 @@
         :unknown-error))))
 
 (defn start! [data e]
+  (raise! data :nav/clear-errors nil)
   (raise! data :project/wait nil)
   (let [url (:url (:project data))
         [user repo] (take-last 2 (str/split url "/"))]

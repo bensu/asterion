@@ -3,7 +3,8 @@
            [org.apache.commons.io FileUtils]
            [org.eclipse.jgit.api.errors TransportException
                                         InvalidRemoteException])
-  (:require [clojure.java.io :as io]
+  (:require [clojure.string :as str]
+            [clojure.java.io :as io]
             [com.stuartsierra.component :as component]
             [ring.middleware.params :as params]
             [ring.util.response :as response]
@@ -32,6 +33,8 @@
     (try
       (git/git-clone-full url (.getPath dir))
       (project/depgraph (project/parse-project dir))
+      (catch java.lang.AssertionError _
+        {:error :project/no-project-file})
       (catch InvalidRemoteException _
         {:error :project/not-found})
       (catch TransportException _
@@ -50,12 +53,19 @@
    :headers {"Content-Type" "application/edn"}
    :body (pr-str body)})
 
-(defn repo-handler [url]
+(defn repo-handler [user repo]
   (try
-    (let [graph (parse-url url)]
-      (if (contains? graph :error)
-        (error-response graph)
-        (ok-response {:graph graph})))
+    (let [c (-> (str/join "/" ["cached" user repo]) 
+              (str ".edn")
+              io/resource 
+              io/file)]
+      (if (.exists c)
+        (response/file-response (.getPath c))
+        (let [url (str "https://github.com/" user "/" repo ".git")
+              graph (parse-url url)]
+          (if (contains? graph :error)
+            (error-response graph)
+            (ok-response {:graph graph})))))
     (catch Exception e
       (error-response {:error e}))))
 
@@ -63,7 +73,7 @@
   (GET "/" _ (response/file-response "resources/public/index.html"))
   (GET "/repo/:user/:repo" [user repo] 
     (if (and (string? user) (string? repo))
-      (repo-handler (str "https://github.com/" user "/" repo ".git"))
+      (repo-handler user repo)
       (error-response (str "Bad params: " user repo))))
   (route/resources "/")
   (route/files "/")
