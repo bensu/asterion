@@ -38,16 +38,7 @@ html, body {
     border-radius: 3px;
 }
 
-.notification {
-    .box;
-    .BoxShadowHelper(2);
-    position: absolute;
-    left: 50%;
-    width: 500px;
-    margin-left: -250px;
-    margin-top: @topMargin;
-    z-index: 2;
-}
+@boxWidth: 500px;
 
 .center {
     flex: none;
@@ -60,7 +51,6 @@ html, body {
     right: 10px;
 }
 
-@boxWidth: 500px;
 
 .float-box {
     .box;
@@ -106,11 +96,20 @@ input::-moz-input-placeholder {
 }
 
 .error-card {
+    z-index: 2;
+    font-size: larger;
     color: @whiteGhost;
     background: @indianRed; 
     > p {
         margin-bottom: 8px;
     }
+}
+
+.notification {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 20px auto;
 }
 
 .Title {

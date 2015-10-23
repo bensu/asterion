@@ -136,7 +136,7 @@
           (assoc data
             :error {:title "Error" 
                     :msg (error->msg (first (:errors data)))})
-          {:opts {:class "notification error-card"
+          {:opts {:class "float-box error-card center"
                   :close-fn (fn [_]
                               (raise! data :nav/clear-errors nil))}}))
       (dom/div #js {:className "float-box blue-box center"}
@@ -161,8 +161,6 @@
                       [user repo] (take-last 2 (str/split url "/"))]
                   (GET (str "/repo/" user "/" repo)
                     {:handler (fn [res]
-                                (println (type res))
-                                (println res)
                                 (raise! data :project/done nil)
                                 (raise! data :graph/add
                                   (:graph (reader/read-string res))))
@@ -233,7 +231,7 @@
             (assoc data
               :error {:title "Error" 
                       :msg (error->msg (first (:errors data)))})
-            {:opts {:class "notification error-card"
+            {:opts {:class "notification float-box error-card"
                     :close-fn (fn [_]
                                 (raise! data :nav/clear-errors nil))}}))
         (om/build graph (:buffer data))))))
