@@ -44,16 +44,6 @@
 
 (defn update-state [data [tag msg]]
   (case tag
-    ;; :project/start
-    ;; (try
-    ;;   (let [srcs (:srcs msg)
-    ;;         graph (deps/depgraph (:platform (:project data)) srcs)]
-    ;;     (-> data
-    ;;       (assoc :graph graph :buffer graph :errors #{})
-    ;;       (assoc-in [:project :srcs] srcs)))
-    ;;   (catch :default e
-    ;;     (assoc data :errors #{(.-message e)})))
-
     :graph/add (-> data
                  (assoc :graph msg)
                  (update-state [:nav/graph->buffer msg])
@@ -121,6 +111,15 @@
 
 ;; ====================================================================== 
 ;; Project Screen 
+
+(def examples
+  ["https://github.com/clojure/clojurescript"
+   "https://github.com/ztellman/manifold"
+   "https://github.com/aphyr/riemann"
+   "https://github.com/metabase/metabase"
+   "https://github.com/Engelberg/instaparse"
+   "https://github.com/bevuta/pepa"
+   "https://github.com/overtone/overtone"])
 
 (defn button [label f]
   (dom/div #js {:className "btn--green"

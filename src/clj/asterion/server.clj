@@ -1,5 +1,6 @@
 (ns asterion.server
-  (:import [java.util UUID])
+  (:import [java.util UUID]
+           [org.apache.commons.io FileUtils])
   (:require [clojure.java.io :as io]
             [com.stuartsierra.component :as component]
             [ring.middleware.params :as params]
@@ -16,10 +17,12 @@
 
 (defn parse-url [url]
   (let [repo-name (git-util/name-from-uri url)
-        dir (io/file "tmp" (uuid) repo-name)
-        repo (git/git-clone-full url (.getPath dir))]
-    (.deleteOnExit dir)
-    (project/depgraph (project/parse-project dir))))
+        dir (io/file "tmp" (str (uuid) repo-name))
+        repo (git/git-clone-full url (.getPath dir))
+        graph (project/depgraph (project/parse-project dir))]
+    (future
+      (FileUtils/deleteDirectory dir))
+    graph))
 
 (defn error-response [error]
   {:status 500
