@@ -9,8 +9,11 @@ html, body {
     height: 100%; 
 }
 
-.center-container {
+.whole-page {
     height: 100vh; 
+}
+
+.center-container {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,7 +35,7 @@ html, body {
 
 .box {
     padding: 12px 12px 12px 18px; 
-    border-radius: 2px;
+    border-radius: 3px;
 }
 
 .notification {
@@ -57,7 +60,7 @@ html, body {
     right: 10px;
 }
 
-@boxWidth: 400px;
+@boxWidth: 500px;
 
 .float-box {
     .box;
@@ -81,6 +84,7 @@ html, body {
 }
 
 .blue-box {
+    font-size: larger;
     .blue;
 }
 
@@ -89,7 +93,7 @@ html, body {
     border: 0;
     outline: 0;
     border-bottom: 1px solid @whiteGhost;
-    width: 180px;
+    width: 90%;
     .blue;
 }
 
@@ -171,6 +175,8 @@ input::-moz-input-placeholder {
     display: inline-block;
     text-align: center;
     min-width: 50px;
+    margin-top: 8px;
+    margin-bottom: 8px;
     padding: 5px;
     padding-right: 10px;
     padding-left: 10px;
@@ -265,3 +271,6 @@ input::-moz-input-placeholder {
     .expand-activate;
 }
 
+.clojure-logo {
+
+}

@@ -123,18 +123,14 @@
 ;; ====================================================================== 
 ;; Project Screen 
 
-(defn button [platform f {:keys [value label] :as item}]
+(defn button [label f]
   (dom/div #js {:className "btn--green"
-                :onClick (partial f item)}
-    (or label value)))
-
-(def serial-project
-  (reader/read-string
-    "{:edges [{:source asterion.dir, :target asterion.components} {:source asterion.dir, :target cljs.node.io} {:source asterion.core, :target asterion.d3} {:source asterion.core, :target asterion.components} {:source asterion.core, :target asterion.project}], :nodes [{:name \"asterion.dir\"} {:name \"cljs.node.io\"} {:name \"asterion.core\"} {:name \"asterion.d3\"} {:name \"asterion.components\"} {:name \"asterion.project\"} {:name \"asterion.deps\"}]}"))
+                :onClick f}
+    label))
 
 (defn select-project [data owner]
   (om/component
-    (dom/div #js {:className "page center-container"}
+    (dom/div #js {:className "page center-container whole-page"}
       (when-not (empty? (:errors data))
         (om/build error-card
           (assoc data
@@ -145,35 +141,36 @@
                               (raise! data :nav/clear-errors nil))}}))
       (dom/div #js {:className "float-box blue-box center"}
         (dom/h1 #js {:className "blue-box__title"} "Asterion")
-        (dom/p nil "Make and explore dependency graphs for Clojure projects.")
-        (dom/p nil "To get started, open your project.clj for:")
+        (dom/p nil "Make dependency graphs for Clojure projects.")
+        (dom/p nil "Paste a link for a github repo")
         (dom/input #js {:type "url"
                         :className "blue-input"
+                        :placeholder "Ex: https://github.com/clojure/clojurescript"
                         :value (:url (:project data))
                         :onChange (fn [e]
                                     (let [url (.. e -target -value)]
                                       (raise! data :project/url url)))})
+        (dom/br nil)
         (if (:waiting? data)
           (dom/p nil "Processing project")
-          (dom/button
-            #js {:onClick
-                 (fn [_]
-                   (raise! data :project/wait nil)
-                   (let [url (:url (:project data))
-                         [user repo] (take-last 2 (str/split url "/"))]
-                     (GET (str "/repo/" user "/" repo)
-                       {:handler (fn [res]
-                                   (println (type res))
-                                   (println res)
-                                   (raise! data :project/done nil)
-                                   (raise! data :graph/add
-                                     (:graph (reader/read-string res))))
-                        :error-handler
-                        (fn [err]
-                          (println err)
-                          (raise! data :project/done nil)
-                          (raise! data :nav/add-error "We couldn't load the project"))})))}
-            "Go"))))))
+          (dom/div #js {:className "center-container"}
+            (button "Graph"
+              (fn [_]
+                (raise! data :project/wait nil)
+                (let [url (:url (:project data))
+                      [user repo] (take-last 2 (str/split url "/"))]
+                  (GET (str "/repo/" user "/" repo)
+                    {:handler (fn [res]
+                                (println (type res))
+                                (println res)
+                                (raise! data :project/done nil)
+                                (raise! data :graph/add
+                                  (:graph (reader/read-string res))))
+                     :error-handler
+                     (fn [err]
+                       (println err)
+                       (raise! data :project/done nil)
+                       (raise! data :nav/add-error "We couldn't load the project"))}))))))))))
 
 ;; ====================================================================== 
 ;; Graph Screen

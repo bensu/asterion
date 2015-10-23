@@ -7,7 +7,7 @@
   :source-paths ["src/clj" "src/cljs"]
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "1.7.122"]
+                 [org.clojure/clojurescript "1.7.145"]
                  [org.clojure/tools.namespace "0.3.19-SNAPSHOT"]
                  [org.clojure/tools.reader "0.10.0-alpha1"]
                  [com.stuartsierra/component "0.2.3"]
@@ -58,7 +58,7 @@
 
   :clean-targets ^{:protect false} [:target-path "out" "resources/public/js/p"]
 
-  :figwheel {:css-dirs ["app/css"]
+  :figwheel {:css-dirs ["resources/public/css"]
              :ring-handler "asterion.server/app-handler"}
 
   :profiles {:dev {:plugins [[lein-ancient "0.6.7"]
