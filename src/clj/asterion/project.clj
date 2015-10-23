@@ -19,8 +19,11 @@
 
 (defn parse-project
   "Takes a File "
-  [^File project-file]
-  (mapv io/file (:source-paths (project/read (.getPath project-file)))))
+  [^File project-dir]
+  (->> (.getPath (io/file project-dir "project.clj"))
+    project/read-raw 
+    :source-paths 
+    (mapv (partial io/file project-dir))))
 
 (defn platform->ext [platform]
   (get {:clj find/clj
