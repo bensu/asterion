@@ -3,8 +3,8 @@ goog.provide('asterion.tree');
 goog.require('goog.array');
 goog.require('asterion.d3');
 
-asterion.tree.config = {w: screen.width,
-                        h: screen.height,
+asterion.tree.config = {w: window.innerWidth,
+                        h: window.outerHeight,
                         rx: 60,
                         ry: 30,
                         fill: d3.scale.category20()};
