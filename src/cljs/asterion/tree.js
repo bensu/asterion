@@ -2,6 +2,7 @@ goog.provide('asterion.tree');
 
 goog.require('goog.array');
 goog.require('asterion.d3');
+goog.require('asterion.ring');
 
 asterion.tree.config = {w: window.innerWidth,
                         h: window.outerHeight,
@@ -19,37 +20,37 @@ asterion.tree.formatNs = function(s) {
     return s.split(".").join("\n");
 };
 
-asterion.tree.colors = palette('tol',11); 
+asterion.tree.colors = new asterion.ring.Ring(palette('tol-rainbow',10)); 
+
+asterion.tree.groupToColor = asterion.ring.memoize(asterion.tree.colors);
 
 asterion.tree.nodeToGroup = function(name) {
-    return name.split("\.")[0];
+    // TODO: looking at the second token works for libraries, not for apps 
+    return name.split("\.")[1];
+};
+
+asterion.tree.nodeToSubGroup = function(name) {
+    var tokens = name.split("\.");
+    return (tokens.length > 2) ? tokens[1] : null;
 };
 
 asterion.tree.Graph = function(json) {
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
 
-   var allColors = asterion.tree.colors.slice(0);
    var nodeColors = {};
    json.nodes.forEach(function(node) {
        var group = asterion.tree.nodeToGroup(node.name);
-       var color;
-       if (typeof nodeColors[group] !== "undefined") {
-           color = nodeColors[group];
-       } else {
-           color = allColors[allColors.length - 1];
-           nodeColors[group] = color;
-           allColors.pop();
-       }
+       var color = asterion.tree.groupToColor(group); 
        var hgStyle = "";
        var labelStyle = "";
        if (node.highlight) {
            labelStyle = "fill:#f0f1eb";
            hgStyle = "fill:black;";
        } 
-       g.setNode(node.name,
-                 {label: node.name,
-                  labelStyle: labelStyle, 
-                  style: "fill:#" + color + ";stroke:black;" + hgStyle});
+       g.setNode(node.name, {
+           label: node.name,
+           labelStyle: labelStyle, 
+           style: "fill:#" + color + ";stroke:black;" + hgStyle});
        });
        
    json.edges.forEach(function(edge) {
