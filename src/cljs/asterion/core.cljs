@@ -18,11 +18,13 @@
 (def init-state {:nav {:ns ""
                        :highlight "" ;; can be local state
                        :highlighted #{}}
+                 :waiting? true
                  :buffer {}
                  :graph {}
                  :errors #{}
                  :project {:url ""
-                           :name ""
+                           :user nil ;; string 
+                           :repo nil ;; string 
                            :srcs #{} 
                            :platform nil}})
 
@@ -53,6 +55,8 @@
                  (assoc :graph msg)
                  (update-state [:nav/graph->buffer msg])
                  (update-state [:nav/draw! nil]))
+
+    :project/data (update data :project #(merge % msg))
 
     :project/url (assoc-in data [:project :url] msg)
     
@@ -141,9 +145,11 @@
 
 (defn start! [data e]
   (raise! data :nav/clear-errors nil)
-  (raise! data :project/wait nil)
   (let [url (:url (:project data))
         [user repo] (take-last 2 (str/split url "/"))]
+    ;; validation?
+    (raise! data :project/wait nil)
+    (raise! data :project/data {:user user :repo repo})
     (GET (str "/repo/" user "/" repo)
       {:handler (fn [res]
                   (raise! data :project/done nil)
@@ -155,6 +161,20 @@
   (dom/div #js {:className "btn--green"
                 :onClick f}
     label))
+
+(defn project-name [data]
+  (let [project (:project data)]
+    (when-let [repo (:repo project)]
+      (when-let [user (:user project)]
+        (str user "/" repo)))))
+
+(defn example-link [link owner]
+  (om/component
+    (dom/li #js {:className "file-item"} 
+      (dom/a #js {:className "file-item__text"
+                  :target "_blank"
+                  :href link}
+        link))))
 
 (defn select-project [data owner]
   (om/component
@@ -169,23 +189,35 @@
                               (raise! data :nav/clear-errors nil))}}))
       (dom/div #js {:className "float-box blue-box center"}
         (dom/h1 #js {:className "blue-box__title"} "Asterion")
-        (dom/p nil "Make dependency graphs for Clojure projects.")
-        (dom/p nil "Paste a link for a github repo")
-        (dom/input #js {:type "url"
-                        :className "blue-input"
-                        :placeholder (str "Ex: " (rand-nth examples))
-                        :value (:url (:project data))
-                        :onKeyDown (fn [e]
-                                     (when (= "Enter" (.-key e))
-                                       (start! data e)))
-                        :onChange (fn [e]
-                                    (let [url (.. e -target -value)]
-                                      (raise! data :project/url url)))})
-        (dom/br nil)
-        (if (:waiting? data)
-          (dom/p nil "Processing project")
-          (dom/div #js {:className "center-container"}
-            (button "Graph" (partial start! data))))))))
+        (if true ;; (:waiting? data)
+          (dom/div nil
+            (dom/p nil (str "Processing " (or (project-name data) "...")))
+            (dom/p nil "Try other cool projects:")
+            (apply dom/ul #js {:className "folder-list"} 
+              (->> (shuffle examples)
+                (take 3)
+                (map (partial om/build example-link))))
+            (dom/p nil
+              (dom/span nil "but whatever you do, don't try "
+                (dom/a #js {:className "file-item__text"
+                            :href "https://github.com/clojure/core.typed"
+                            :target "_blank"}
+                  "core.typed"))))
+          (dom/div nil
+            (dom/p nil "Make dependency graphs for Clojure projects.")
+            (dom/p nil "Paste a link for a github repo")
+            (dom/input #js {:type "url"
+                            :className "blue-input"
+                            :placeholder (str "Ex: " (rand-nth examples))
+                            :value (:url (:project data))
+                            :onKeyDown (fn [e]
+                                         (when (= "Enter" (.-key e))
+                                           (start! data e)))
+                            :onChange (fn [e]
+                                        (let [url (.. e -target -value)]
+                                          (raise! data :project/url url)))})
+            (dom/div #js {:className "center-container"}
+              (button "Graph" (partial start! data)))))))))
 
 ;; ====================================================================== 
 ;; Graph Screen
@@ -209,9 +241,9 @@
     om/IRender
     (render [_]
       (dom/div #js {:className "float-box--side blue-box nav"} 
-        (if (empty? (:name (:project data)))
+        (if (empty? (:repo (:project data)))
           (dom/h3 #js {:className "blue-box__title"} "Asterion")
-          (dom/h3 #js {:className "project-name"} (:name (:project data))))
+          (dom/h3 #js {:className "project-name"} (:repo (:project data))))
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
