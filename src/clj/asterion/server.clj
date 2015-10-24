@@ -34,7 +34,7 @@
   (str (str/join "/" [cache-root user repo]) ".edn") )
 
 (defn cache! [user repo]
-  (let [p (str "resources/" (cache-path user repo))
+  (let [p (str "resources/public/" (cache-path user repo))
         parent (.getParentFile (io/file p))]
     ;; ensure file
     (when-not (.exists parent)

@@ -142,6 +142,10 @@
       (catch :default e
         :unknown-error))))
 
+(defn handler [data res]
+  (raise! data :project/done nil)
+  (raise! data :graph/add (:graph (reader/read-string res))))
+
 (defn start! [data e]
   (raise! data :nav/clear-errors nil)
   (let [url (:url (:project data))
@@ -149,12 +153,15 @@
     ;; validation?
     (raise! data :project/wait nil)
     (raise! data :project/data {:user user :repo repo})
-    (GET (str "/repo/" user "/" repo)
-      {:handler (fn [res]
-                  (raise! data :project/done nil)
-                  (raise! data :graph/add
-                    (:graph (reader/read-string res))))
-       :error-handler (partial error-handler data)})))
+    (GET (str "/cached/" user "/" repo ".edn") 
+      {:handler (partial handler data) 
+       :error-handler
+       (fn [err] 
+         (if (= 404 (:status err))
+           (GET (str "/repo/" user "/" repo)
+             {:handler (partial handler data)
+              :error-handler (partial error-handler data)})
+           (error-handler data err)))})))
 
 (defn button [label f]
   (dom/div #js {:className "btn--green"
