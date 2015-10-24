@@ -194,7 +194,9 @@
             (dom/p nil (str "Processing " (or (project-name data) "...")))
             (dom/p nil "Try other cool projects:")
             (apply dom/ul #js {:className "folder-list"} 
-              (->> (shuffle examples)
+              (->> examples
+                (remove (partial = (:url (:project data))))
+                shuffle
                 (take 3)
                 (map (partial om/build example-link))))
             (dom/p nil
