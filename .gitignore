@@ -1,6 +1,7 @@
 .DS_Store
 /target
 /classes
+/resources/cached/
 tmp
 /checkouts
 pom.xml

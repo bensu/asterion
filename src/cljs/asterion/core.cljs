@@ -207,7 +207,7 @@
                   "core.typed"))))
           (dom/div nil
             (dom/p nil "Make dependency graphs for Clojure projects.")
-            (dom/p nil "Paste a link for a github repo")
+            (dom/p nil "Paste a link for a github repo:")
             (dom/input #js {:type "url"
                             :className "blue-input"
                             :placeholder (str "Ex: " (rand-nth examples))

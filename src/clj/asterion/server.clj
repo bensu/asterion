@@ -1,8 +1,4 @@
 (ns asterion.server
-  (:import [java.util UUID]
-           [org.apache.commons.io FileUtils]
-           [org.eclipse.jgit.api.errors TransportException
-                                        InvalidRemoteException])
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
             [com.stuartsierra.component :as component]
@@ -11,37 +7,13 @@
             [ring.adapter.jetty :as jetty]
             [compojure.core :refer :all]
             [compojure.route :as route]
-            [clj-jgit.porcelain :as git]
-            [clj-jgit.util :as git-util]
             [asterion.project :as project]))
 
-(defn uuid []
-  (str (UUID/randomUUID)))
+;; ====================================================================== 
+;; Utils
 
-(defn parse-url
-  "Given a git url (string) it will fetch the repository and try to return
-   a dependency graph for it. It may also return the following errors:
-
-  - {:error :no-project-file}
-  - {:error :project-not-found}
-  - {:error :project-protected}
-  - {:error #<Exception>} ;; unknown exception"
-  [url]
-  {:pre [(string? url)]}
-  (let [repo-name (git-util/name-from-uri url)
-        dir (io/file "tmp" (str (uuid) repo-name))]
-    (try
-      (git/git-clone-full url (.getPath dir))
-      (project/depgraph (project/parse-project dir))
-      (catch java.lang.AssertionError _
-        {:error :project/no-project-file})
-      (catch InvalidRemoteException _
-        {:error :project/not-found})
-      (catch TransportException _
-        {:error :project/protected})
-      (catch Exception e
-        {:error e})
-      (finally (future (FileUtils/deleteDirectory dir))))))
+(defn ->url [user repo]
+  (str "https://github.com/" user "/" repo ".git"))
 
 (defn error-response [error]
   {:status 500
@@ -53,19 +25,40 @@
    :headers {"Content-Type" "application/edn"}
    :body (pr-str body)})
 
+;; ====================================================================== 
+;; Cache
+
+(def cache-root "cached")
+
+(defn cache-path [user repo]
+  (str (str/join "/" [cache-root user repo]) ".edn") )
+
+(defn cache! [user repo]
+  (let [p (str "resources/" (cache-path user repo))
+        parent (.getParentFile (io/file p))]
+    ;; ensure file
+    (when-not (.exists parent)
+      (.mkdirs parent))
+    (spit p {:user user
+             :repo repo
+             :graph (project/parse-url (->url user repo))})
+    p))
+
+(defn cached
+  "Returns a path if the graph for the repo is in cache, otwherwise nil"
+  [user repo]
+  (when-let [c (some-> (cache-path user repo) io/resource io/file)]
+    (when (.exists c)
+      (.getPath c))))
+
 (defn repo-handler [user repo]
   (try
-    (let [c (-> (str/join "/" ["cached" user repo]) 
-              (str ".edn")
-              io/resource 
-              io/file)]
-      (if (.exists c)
-        (response/file-response (.getPath c))
-        (let [url (str "https://github.com/" user "/" repo ".git")
-              graph (parse-url url)]
-          (if (contains? graph :error)
-            (error-response graph)
-            (ok-response {:graph graph})))))
+    (if-let [cache-path (cached user repo)]
+      (response/file-response cache-path)
+      (let [graph (project/parse-url (->url user repo))]
+        (if (contains? graph :error)
+          (error-response graph)
+          (ok-response {:graph graph}))))
     (catch Exception e
       (error-response {:error e}))))
 

@@ -1,12 +1,24 @@
 (ns asterion.project
-  (:import [java.io File])
+  (:import [java.io File]
+           [java.util UUID]
+           [org.apache.commons.io FileUtils]
+           [org.eclipse.jgit.api.errors TransportException
+            InvalidRemoteException])
   (:require [clojure.java.io :as io]
             [clojure.set :as set]
             [leiningen.core.project :as project]
             [clojure.tools.namespace.file :as file]
             [clojure.tools.namespace.find :as find]
             [clojure.tools.namespace.track :as track]
-            [clojure.tools.namespace.dependency :as dep]))
+            [clojure.tools.namespace.dependency :as dep]
+            [clj-jgit.porcelain :as git]
+            [clj-jgit.util :as git-util]))
+
+;; ====================================================================== 
+;; Utils
+
+(defn uuid []
+  (str (UUID/randomUUID)))
 
 ;; ======================================================================  
 ;; Helpers
@@ -58,30 +70,27 @@
                (sort-by second)
                (mapv (fn [[n i]] {:name (str n)})))})))
 
-(defn valid-graph? [graph]
-  (not (empty? (:nodes graph))))
+(defn parse-url
+  "Given a git url (string) it will fetch the repository and try to return
+   a dependency graph for it. It may also return the following errors:
 
-(defn filter-graph
-  "Removes from the graph the nodes and edges that match the namespaces in ns"
-  [graph ns]
-  (letfn [(starts-with-any? [s]
-            (->> ns
-              (map #(re-find re-pattern s))
-              (some some?)))
-          (node-matches? [node]
-            (starts-with-any? (name (:name node))))
-          (edge-matches? [edge]
-            (->> (vals (select-keys edge [:target :source]))
-              (map (comp starts-with-any? name))
-              (some true?)))]
-    (-> graph
-      (update :nodes (comp vec (partial remove node-matches?)))
-      (update :edges (comp vec (partial remove edge-matches?))))))
-
-(defn highlight-graph
-  "Adds :highlight true to the nodes in the graph that are also in highlighted"
-  [graph highlighted]
-  {:pre [(map? graph) (set? highlighted)]}
-  (let [highlighted (set (map name highlighted))]
-    (update graph :nodes
-      (partial mapv #(assoc % :highlight (contains? highlighted (:name %)))))))
+  - {:error :no-project-file}
+  - {:error :project-not-found}
+  - {:error :project-protected}
+  - {:error #<Exception>} ;; unknown exception"
+  [url]
+  {:pre [(string? url)]}
+  (let [repo-name (git-util/name-from-uri url)
+        dir (io/file "tmp" (str (uuid) repo-name))]
+    (try
+      (git/git-clone-full url (.getPath dir))
+      (depgraph (parse-project dir))
+      (catch java.lang.AssertionError _
+        {:error :project/no-project-file})
+      (catch InvalidRemoteException _
+        {:error :project/not-found})
+      (catch TransportException _
+        {:error :project/protected})
+      (catch Exception e
+        {:error e})
+      (finally (future (FileUtils/deleteDirectory dir))))))
