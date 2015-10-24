@@ -1,0 +1,29 @@
+@loaderHeight: 1px;
+
+.loader {
+  height: @loaderHeight; 
+  width: 90%;
+  position: relative;
+  overflow: hidden;
+  background-color: @blueHavelock; // #ddd;
+}
+
+.loader:before{
+  display: block;
+  position: absolute;
+  content: "";
+  left: -200px;
+  width: 200px;
+  height: @loaderHeight; 
+  background-color: @whiteGhost; // @blueHavelock; // #2980b9;
+  animation: loading 3s linear infinite;
+}
+
+@keyframes loading {
+    from {left: -200px; width: 30%;}
+    50% {width: 30%;}
+    70% {width: 50%;}
+    80% {left: 50%;}
+    90% {left: 105%;}
+    to {left: 100%;}
+}

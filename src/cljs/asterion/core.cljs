@@ -18,7 +18,6 @@
 (def init-state {:nav {:ns ""
                        :highlight "" ;; can be local state
                        :highlighted #{}}
-                 :waiting? true
                  :buffer {}
                  :graph {}
                  :errors #{}
@@ -189,9 +188,10 @@
                               (raise! data :nav/clear-errors nil))}}))
       (dom/div #js {:className "float-box blue-box center"}
         (dom/h1 #js {:className "blue-box__title"} "Asterion")
-        (if true ;; (:waiting? data)
+        (if (:waiting? data)
           (dom/div nil
             (dom/p nil (str "Processing " (or (project-name data) "...")))
+            (dom/div #js {:className "loader"})
             (dom/p nil "Try other cool projects:")
             (apply dom/ul #js {:className "folder-list"} 
               (->> examples
