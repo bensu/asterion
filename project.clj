@@ -59,8 +59,7 @@
 
   :clean-targets ^{:protect false} [:target-path "out" "resources/public/js/p"]
 
-  :figwheel {:css-dirs ["resources/public/css"]
-             :ring-handler "asterion.server/app-handler"}
+  :figwheel {:css-dirs ["resources/public/css"]}
 
   :profiles {:dev {:plugins [[lein-ancient "0.6.7"]
                              [lein-kibit "0.1.2"]
