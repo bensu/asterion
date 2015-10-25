@@ -64,4 +64,4 @@
   :profiles {:dev {:plugins [[lein-ancient "0.6.7"]
                              [lein-kibit "0.1.2"]
                              [lein-cljfmt "0.3.0"]
-                             [lein-figwheel "0.3.8"]]}})
+                             [lein-figwheel "0.4.1"]]}})
