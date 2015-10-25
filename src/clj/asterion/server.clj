@@ -33,16 +33,19 @@
 (defn cache-path [user repo]
   (str (str/join "/" [cache-root user repo]) ".edn") )
 
-(defn cache! [user repo]
-  (let [p (str "resources/public/" (cache-path user repo))
-        parent (.getParentFile (io/file p))]
-    ;; ensure file
-    (when-not (.exists parent)
-      (.mkdirs parent))
-    (spit p {:user user
-             :repo repo
-             :graph (project/parse-url (->url user repo))})
-    p))
+(defn cache!
+  ([user repo]
+   (cache! user repo ""))
+  ([user repo subpath]
+   (let [p (str "resources/public/" (cache-path user repo))
+         parent (.getParentFile (io/file p))]
+     ;; ensure file
+     (when-not (.exists parent)
+       (.mkdirs parent))
+     (spit p {:user user
+              :repo repo
+              :graph (project/parse-url (->url user repo) subpath)})
+     p)))
 
 (defn cached
   "Returns a path if the graph for the repo is in cache, otwherwise nil"

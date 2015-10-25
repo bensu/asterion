@@ -32,7 +32,7 @@
 (defn parse-project
   "Takes a File "
   [^File project-dir]
-  (let [f  (io/file project-dir "project.clj")]
+  (let [f (io/file project-dir "project.clj")]
     (assert (.exists f) "project.clj not found")
     (->> (.getPath f)
       project/read-raw 
@@ -78,19 +78,20 @@
   - {:error :project-not-found}
   - {:error :project-protected}
   - {:error #<Exception>} ;; unknown exception"
-  [url]
-  {:pre [(string? url)]}
-  (let [repo-name (git-util/name-from-uri url)
-        dir (io/file "tmp" (str (uuid) repo-name))]
-    (try
-      (git/git-clone-full url (.getPath dir))
-      (depgraph (parse-project dir))
-      (catch java.lang.AssertionError _
-        {:error :project/no-project-file})
-      (catch InvalidRemoteException _
-        {:error :project/not-found})
-      (catch TransportException _
-        {:error :project/protected})
-      (catch Exception e
-        {:error e})
-      (finally (future (FileUtils/deleteDirectory dir))))))
+  ([url] (parse-url url ""))
+  ([url subpath]
+   {:pre [(string? url)]}
+   (let [repo-name (git-util/name-from-uri url)
+         dir (io/file "tmp" (str (uuid) repo-name))]
+     (try
+       (git/git-clone-full url (.getPath dir))
+       (depgraph (parse-project (io/file dir subpath)))
+       (catch java.lang.AssertionError _
+         {:error :project/no-project-file})
+       (catch InvalidRemoteException _
+         {:error :project/not-found})
+       (catch TransportException _
+         {:error :project/protected})
+       (catch Exception e
+         {:error e})
+       (finally (future (FileUtils/deleteDirectory dir)))))))
