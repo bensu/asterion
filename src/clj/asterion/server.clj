@@ -74,6 +74,7 @@
       (error-response {:error e}))))
 
 (defroutes app-routes 
+  (HEAD "/" [] "")
   (GET "/" _ (response/file-response "resources/public/index.html"))
   (GET "/repo/:user/:repo" [user repo] 
     (if (and (string? user) (string? repo))
