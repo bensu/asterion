@@ -33,19 +33,25 @@
 (defn cache-path [user repo]
   (str (str/join "/" [cache-root user repo]) ".edn") )
 
+(defn spit-graph
+  "Writes to disk the results"
+  [{:keys [user repo graph] :as data}]
+  {:pre [(every? some? (vals data))]}
+  (let [p (str "resources/public/" (cache-path user repo))
+        parent (.getParentFile (io/file p))]
+    ;; ensure directory 
+    (when-not (.exists parent)
+      (.mkdirs parent))
+    (spit p data)
+    p))
+
 (defn cache!
   ([user repo]
    (cache! user repo ""))
   ([user repo subpath]
-   (let [p (str "resources/public/" (cache-path user repo))
-         parent (.getParentFile (io/file p))]
-     ;; ensure file
-     (when-not (.exists parent)
-       (.mkdirs parent))
-     (spit p {:user user
-              :repo repo
-              :graph (project/parse-url (->url user repo) subpath)})
-     p)))
+   (spit-graph {:user user
+                :repo repo
+                :graph (project/parse-url (->url user repo) subpath)})))
 
 (defn cached
   "Returns a path if the graph for the repo is in cache, otwherwise nil"
@@ -61,7 +67,9 @@
       (let [graph (project/parse-url (->url user repo))]
         (if (contains? graph :error)
           (error-response graph)
-          (ok-response {:graph graph}))))
+          (do
+            (future (spit-graph {:user user :repo repo :graph graph}))
+            (ok-response {:graph graph})))))
     (catch Exception e
       (error-response {:error e}))))
 
