@@ -1,5 +1,6 @@
 (ns asterion.core
-  (:require [clojure.string :as str]
+  (:require [goog.string.linkify :as links]
+            [clojure.string :as str]
             [cljs.reader :as reader]
             [ajax.core :refer [GET POST]]
             [om.core :as om :include-macros true]
@@ -38,7 +39,8 @@
    :project/not-found "We couldn't find the repository"
    :project/protected "The repository is either protected or not there!"
    :project/timeout "It took too long to talk to the server. We don't know what happened!"
-   :project/no-project-file "We couldn't find a project.clj in the repository top level (nested project.clj are not supported yet)"
+   :project/no-project-file "We couldn't find a project.clj in the repository's top level directory."
+   :project/invalid-url "The given url is invalid. Try copy-pasting from the url bar, ex: https://github.com/juxt/yada"
    :nav/search-error "There was a problem while searching"
    :nav/search-not-found "No matches found"
    :unknown-error "We are truly sorry but we don't know what happened."})
@@ -62,6 +64,8 @@
     :project/wait (assoc data :waiting? true)
     
     :project/done (assoc data :waiting? false)
+    
+    :project/invalid-url (update data :errors #(conj % :project/invalid-url))
 
     :project/clear init-state
     
@@ -89,6 +93,7 @@
     ;; If action is unknonw, return data unchanged 
     data))
 
+;; TODO: support raising several events sequentially
 (defn raise! [data tag msg]
   {:pre [(keyword? tag) (om/cursor? data)]}
   (om/transact! data #(update-state % [tag msg])))
@@ -146,22 +151,36 @@
   (raise! data :project/done nil)
   (raise! data :graph/add (:graph (reader/read-string res))))
 
+;; TODO: this function does the unexpected when the repo *does*
+;; contain ".git" in the name!
+(defn remove-git-ext [^string url]
+  (str/replace url #"\.git$" ""))
+
+(defn parse-url [url]
+  (let [url' (links/findFirstUrl url)]
+    (when-not (empty? url')
+      (let [tokens (take-last 2 (str/split (remove-git-ext url') "/"))]
+        (when (and (every? (comp not empty?) tokens)
+                   (not (re-find #"github" (first tokens))))
+          tokens)))))
+
 (defn start! [data e]
   (raise! data :nav/clear-errors nil)
-  (let [url (:url (:project data))
-        [user repo] (take-last 2 (str/split url "/"))]
-    ;; validation?
-    (raise! data :project/wait nil)
-    (raise! data :project/data {:user user :repo repo})
-    (GET (str "/cached/" user "/" repo ".edn") 
-      {:handler (partial handler data) 
-       :error-handler
-       (fn [err] 
-         (if (= 404 (:status err))
-           (GET (str "/repo/" user "/" repo)
-             {:handler (partial handler data)
-              :error-handler (partial error-handler data)})
-           (error-handler data err)))})))
+  (let [url (:url (:project data))]
+    (if-let [[user repo] (parse-url url)]
+      (do
+        (raise! data :project/wait nil)
+        (raise! data :project/data {:user user :repo repo})
+        (GET (str "/cached/" user "/" repo ".edn") 
+          {:handler (partial handler data) 
+           :error-handler
+           (fn [err] 
+             (if (= 404 (:status err))
+               (GET (str "/repo/" user "/" repo)
+                 {:handler (partial handler data)
+                  :error-handler (partial error-handler data)})
+               (error-handler data err)))}))
+      (raise! data :project/invalid-url url))))
 
 (defn button [label f]
   (dom/div #js {:className "btn--green"
