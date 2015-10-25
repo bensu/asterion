@@ -11,6 +11,7 @@
                  [org.clojure/tools.namespace "0.3.19-SNAPSHOT"]
                  [org.clojure/tools.reader "0.10.0-alpha1"]
                  [commons-io/commons-io "2.4"]
+                 [environ "1.0.1"]
                  [com.stuartsierra/component "0.2.3"]
                  [leiningen-core "2.5.3"]
                  [clj-jgit "0.8.8"]
@@ -20,9 +21,9 @@
                  [org.omcljs/om "0.9.0"]
                  [cljs-ajax "0.5.0"]]  
 
-  :plugins [[lein-cljsbuild "1.1.0"]]
-
   :min-lein-version "2.5.1"
+
+  :ring {:handler asterion.server/app-handler}
 
   :cljsbuild
   {:builds {:dev {:source-paths ["src/cljs" "env/dev/cljs"]
@@ -62,6 +63,10 @@
   :figwheel {:css-dirs ["resources/public/css"]}
 
   :profiles {:dev {:plugins [[lein-ancient "0.6.7"]
+                             [lein-cljsbuild "1.1.0"]
+                             [lein-environ "1.0.1"]
                              [lein-kibit "0.1.2"]
+                             [lein-ring "0.9.7"]
                              [lein-cljfmt "0.3.0"]
+                             [lein-beanstalk "0.2.7"]
                              [lein-figwheel "0.4.1"]]}})
