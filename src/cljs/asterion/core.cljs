@@ -41,10 +41,7 @@
 (def ->form
   [(dom/p nil "We couldn't find the repository. ")
    (dom/p nil "Do you want to graph a "
-     (dom/a #js {:className " file--activate file-item__text"
-                 :href form-url 
-                 :target "_blank"}
-       "private repository?"))])
+     (components/link form-url "private repository?" "file--activate"))])
 
 (def error->msg* 
   {:graph/empty-nodes "We found nothing to graph after filtering"
@@ -82,6 +79,10 @@
 
     :project/clear init-state
     
+    :nav/open-help (assoc data :overlay? true)
+    
+    :nav/close-help (assoc data :overlay? false)
+    
     :nav/graph->buffer (assoc data :buffer msg)
 
     :nav/ns (assoc-in data [:nav :ns] msg)
@@ -113,6 +114,22 @@
 
 ;; ====================================================================== 
 ;; Sources Screen
+
+(defn help-button [data owner]
+  (om/component
+    (om/build components/icon-button
+      {:title "Help & About"
+       :icon-class "fa-question float-bottom-corner help-btn"}
+      {:opts {:click-fn (fn [_]
+                          (raise! data :nav/open-help nil))}})))
+
+(defn close-button [data owner]
+  (om/component
+    (om/build components/icon-button
+      {:title "Close Help"
+       :icon-class "fa-times float-right-corner clear-btn"}
+      {:opts {:click-fn (fn [_]
+                          (raise! data :nav/close-help nil))}})))
 
 (defn clear-button [data owner]
   (om/component
@@ -211,14 +228,49 @@
 (defn example-link [link owner]
   (om/component
     (dom/li #js {:className "file-item"} 
-      (dom/a #js {:className "file-item__text"
-                  :target "_blank"
-                  :href link}
-        link))))
+      (components/link link))))
+
+(defn overlay [data owner]
+  (om/component
+    (dom/div #js {:className "overlay"})))
+
+(defn modal [data owner]
+  (om/component
+    (dom/div #js {:className "center-container"}
+      (dom/div #js {:className "modal blue-box float-box center"}
+        (om/build close-button data)
+        (dom/h1 #js {:className "blue-box__title"} "About")
+        (dom/p nil "Dependency graphs can help you comunicate your programs
+                    to your teammates, introduce somebody to the codebase,
+                    explore changes to the architecture, and help you
+                    enforce it during reviews. Code analysis can be "
+          (components/link "https://www.youtube.com/watch?v=hWhBmJJZoNM"
+            "very useful" "file--activate")
+          "but it is inconvienient to setup and generally ignored.
+                    Asterion is a first step into making code analysis more 
+                    approachable.")
+        (dom/p nil "To use the tool, make sure you are pasting a link to a
+                    Github repository, that contains a project.clj file in
+                    it's top directory. For example:")
+        (components/link "https://github.com/clojure/clojurescript"
+          "https://github.com/clojure/clojurescript"
+          "file--activate")
+        (dom/p nil "will work, but "
+          (components/link "https://github.com/clojure/clojure"
+            "https://github.com/clojure/clojure")
+          "won't because it doesn't have a project.clj. ClojureScript and
+           Boot projects are not yet supported.")
+        (dom/p nil "If you have any feedback, you can find me at "
+          (components/link "mailto:sbensu@gmail.com" "sbensu@gmail.com" "file--activate"))))))
 
 (defn select-project [data owner]
   (om/component
     (dom/div #js {:className "page center-container whole-page"}
+      (when (:overlay? data)
+        (om/build overlay data))
+      (when (:overlay? data)
+        (om/build modal data))
+      (om/build help-button data)
       (when-not (empty? (:errors data))
         (om/build error-card
           (assoc data
@@ -242,10 +294,8 @@
                 (map (partial om/build example-link))))
             (dom/p nil
               (dom/span nil "but whatever you do, don't try "
-                (dom/a #js {:className "file-item__text"
-                            :href "https://github.com/clojure/core.typed"
-                            :target "_blank"}
-                  "core.typed"))))
+                (components/link "https://github.com/clojure/core.typed"
+                                 "core.typed"))))
           (dom/div nil
             (dom/p nil "Make dependency graphs for Clojure projects.")
             (dom/p nil "Paste a link for a github repo:")

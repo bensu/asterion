@@ -52,6 +52,11 @@ html, body {
     right: 10px;
 }
 
+.float-bottom-corner {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
 
 .float-box {
     .box;
@@ -139,12 +144,23 @@ input::-moz-input-placeholder {
     text-transform: lowercase;
 }
 
-.clear-btn {
-    color: @whiteGhost;
-    opacity: 0.7;
+.icon-btn {
     cursor: pointer;
     margin-left: 8px;
     font-size: 16px;
+
+}
+
+.clear-btn {
+    .icon-btn;
+    opacity: 0.7;
+    color: @whiteGhost;
+}
+
+.help-btn {
+    .icon-btn;
+    color: @blueHavelock;
+    font-size: 30px;
 }
 
 .clear-btn:hover {
@@ -271,8 +287,4 @@ input::-moz-input-placeholder {
 .expand-icon--active {
     .expand-icon;
     .expand-activate;
-}
-
-.clojure-logo {
-
 }

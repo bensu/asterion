@@ -9,3 +9,12 @@
                 :onClick (if (fn? click-fn)
                            click-fn
                            identity)})))
+
+(defn link
+  ([href] (link href href))
+  ([href label] (link label href ""))
+  ([href label class]
+   (dom/a #js {:className (str "file-item__text " class)
+               :target "_blank"
+               :href href}
+     label)))
