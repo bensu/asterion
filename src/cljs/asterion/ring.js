@@ -19,19 +19,25 @@ asterion.ring.Ring = function(initArray) {
     this.array = initArray.slice();
 };
 
+/**
+ * Gets the next value in the ring
+ **/
 asterion.ring.Ring.prototype.next = function() {
-    this.index = (this.index === this.array.length) ? 0 : (this.index + 1);
-    return this.array[this.index]; 
+    this.index = (this.index < this.array.length) ? this.index : 0;
+    var out = this.array[this.index]; 
+    this.index = this.index + 1;
+    return out; 
 };
 
 /**
- * @param Ring
+ * @param {Ring} initRing
+ * @return {Function}
 */
 asterion.ring.memoize = function(initRing) {
     var dict = {}; 
     return function(val) {
        if (typeof dict[val] === "undefined") {
-           dict[val] = initRing.next();
+           dict[val] = initRing.next(); 
        };
        return dict[val];
     };
