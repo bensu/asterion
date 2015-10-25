@@ -20,7 +20,7 @@ asterion.tree.formatNs = function(s) {
     return s.split(".").join("\n");
 };
 
-asterion.tree.colors = new asterion.ring.Ring(palette('tol-rainbow',10)); 
+asterion.tree.colors = new asterion.ring.Ring(palette('tol-rainbow',12).reverse()); 
 
 asterion.tree.groupToColor = asterion.ring.memoize(asterion.tree.colors);
 
