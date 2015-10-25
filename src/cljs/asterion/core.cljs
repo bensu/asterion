@@ -291,7 +291,7 @@
                   :on-enter (fn [_] (raise! data :nav/draw! nil))
                   :title "I'll remove the ns with names that match these words"
                   :value-key :ns
-                  :placeholder "filter ns"}})))))
+                  :placeholder "filter out namespaces"}})))))
 
 (defn graph [buffer owner]
   (letfn [(draw! []
