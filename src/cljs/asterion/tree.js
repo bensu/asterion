@@ -26,7 +26,7 @@ asterion.tree.groupToColor = asterion.ring.memoize(asterion.tree.colors);
 
 asterion.tree.nodeToGroup = function(name) {
     // TODO: looking at the second token works for libraries, not for apps 
-    return name.split("\.")[1];
+    return name.split("\.")[1].replace("-","");
 };
 
 asterion.tree.nodeToSubGroup = function(name) {
@@ -37,7 +37,6 @@ asterion.tree.nodeToSubGroup = function(name) {
 asterion.tree.Graph = function(json) {
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
 
-   var nodeColors = {};
    json.nodes.forEach(function(node) {
        var group = asterion.tree.nodeToGroup(node.name);
        var color = asterion.tree.groupToColor(group); 
