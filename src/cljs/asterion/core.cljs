@@ -33,11 +33,22 @@
 ;; ====================================================================== 
 ;; Update
 
+(def form-url
+  "https://docs.google.com/forms/d/19FW2TpxN3FmtJ6drU5N6Ia8g3v_yhr1VuVq5sa74dZ4/viewform")
+
+(def ->form
+  [(dom/p nil "We couldn't find the repository. ")
+   (dom/p nil "Do you want to graph a "
+     (dom/a #js {:className " file--activate file-item__text"
+                 :href form-url 
+                 :target "_blank"}
+       "private repository?"))])
+
 (def error->msg* 
   {:graph/empty-nodes "We found nothing to graph after filtering"
    :project/parse-error "We couldn't read your project.clj"
    :project/not-found "We couldn't find the repository"
-   :project/protected "The repository is either protected or not there!"
+   :project/protected ->form  
    :project/timeout "It took too long to talk to the server. We don't know what happened!"
    :project/no-project-file "We couldn't find a project.clj in the repository's top level directory."
    :project/invalid-url "The given url is invalid. Try copy-pasting from the url bar, ex: https://github.com/juxt/yada"
@@ -119,7 +130,9 @@
       (dom/h3 #js {:className "blue-box__subtitle"
                    :title "A veces me equivoco y nos reimos buenamente los dos"}
         (:title error))
-      (dom/p nil (:msg error)))))
+      (cond
+        (string? (:msg error)) (dom/p nil (:msg error))
+        :else (apply dom/div nil (:msg error))))))
 
 
 ;; ====================================================================== 
