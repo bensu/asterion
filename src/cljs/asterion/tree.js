@@ -4,16 +4,19 @@ goog.require('goog.array');
 goog.require('asterion.d3');
 goog.require('asterion.ring');
 
-asterion.tree.config = {w: window.innerWidth,
-                        h: window.outerHeight,
-                        rx: 60,
-                        ry: 30,
-                        fill: d3.scale.category20()};
+asterion.tree.config = function() {
+    return {
+        w: window.innerWidth,
+        h: window.outerHeight,
+        rx: 60,
+        ry: 30,
+        fill: d3.scale.category20()
+    };
+};
 
 asterion.tree.svg = function(nodeId) {
-    return d3.select(nodeId)
-                .attr("width", asterion.tree.config.w)
-        	.attr("height", asterion.tree.config.h);
+    var config =  asterion.tree.config();
+    return d3.select(nodeId).attr("width", config.w).attr("height", config.h);
 };
 
 asterion.tree.formatNs = function(s) {
@@ -35,6 +38,7 @@ asterion.tree.nodeToSubGroup = function(name) {
 };
 
 asterion.tree.Graph = function(json) {
+   var config = asterion.tree.config();
    var g = new dagreD3.graphlib.Graph().setGraph({}); 
 
    json.nodes.forEach(function(node) {
@@ -57,8 +61,8 @@ asterion.tree.Graph = function(json) {
    });
    g.nodes().forEach(function(v) {
       var node = g.node(v);
-      node.rx = asterion.tree.config.rx;
-      node.ry = asterion.tree.config.ry;
+      node.rx = config.rx;
+      node.ry = config.ry;
    });
    return g;
 };

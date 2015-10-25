@@ -1,5 +1,7 @@
 (ns asterion.core
+  (:import [goog.dom ViewportSizeMonitor])
   (:require [goog.string.linkify :as links]
+            [goog.events :as events]
             [clojure.string :as str]
             [cljs.reader :as reader]
             [ajax.core :refer [GET POST]]
@@ -307,7 +309,13 @@
         (draw!))
       om/IDidMount
       (did-mount [_]
-        (draw!)))))
+        (let [vsm (ViewportSizeMonitor.)]
+          (om/set-state! owner :vsm vsm)
+          (events/listen vsm events/EventType.RESIZE (fn [e] (draw!))))
+        (draw!))
+      om/IWillUnmount
+      (will-unmount [_]
+        (.unlisten (om/get-state owner :vsm) events/EventType.RESIZE)))))
 
 ;; TODO: should show a loader
 (defn graph-explorer [data owner]
