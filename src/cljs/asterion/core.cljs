@@ -240,7 +240,8 @@
     om/IDidMount
     (did-mount [_]
       (om/set-state! owner :listen-click-in
-        (click/install-out! ["about-modal"] #(raise! data :nav/close-help nil))))
+        (click/install-out! ["about-modal"]
+          #(raise! data :nav/close-help nil))))
     om/IWillUnmount
     (will-unmount [_]
       (click/uninstall! (om/get-state owner :listen-click-in)))
