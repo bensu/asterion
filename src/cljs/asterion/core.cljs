@@ -168,8 +168,6 @@
    "https://github.com/overtone/overtone"
    "https://github.com/juxt/yada"])
 
-
-
 (defn error-handler [data err]
   (raise! data :project/done nil)
   (let [e (try
@@ -201,8 +199,6 @@
         (when (and (every? (comp not empty?) tokens)
                    (not (re-find #"github" (first tokens))))
           tokens)))))
-
-
 
 (defn start! [data e]
   (raise! data :nav/clear-errors nil)
@@ -269,8 +265,10 @@
             (dom/p nil "Code analysis can be "
               (components/link "https://www.youtube.com/watch?v=hWhBmJJZoNM"
                 "very useful" "file--activate")
-              "but it is inconvienient to setup and generally ignored.
-                    Asterion aims to make code analysis more approachable.")
+                   "but it is inconvienient to setup and generally ignored.
+                    Asterion aims to make code analysis more approachable.
+                    Are you interested in graphing "
+              (components/forms-link "private repositories?"))
             (dom/p nil "To use the tool, make sure you are pasting a link to a
                     Github repository that contains a project.clj file in
                     it's top directory. For example:")
