@@ -252,21 +252,20 @@
           (dom/div #js {:className "about-modal float-box blue-box"}
             (om/build close-button data)
             (dom/h1 #js {:className "blue-box__title"} "About")
-            (dom/p nil "Dependency graphs can help you comunicate your programs
-                    to your teammates, introduce somebody to the codebase,
+            (dom/p nil "Dependency graphs can help you comunicate 
+                    with your teammates, introduce people to the codebase,
                     explore changes to the architecture, and help you
-                    enforce it during reviews. Code analysis can be "
+                    enforce it during reviews.")
+            (dom/p nil "Code analysis can be "
               (components/link "https://www.youtube.com/watch?v=hWhBmJJZoNM"
                 "very useful" "file--activate")
               "but it is inconvienient to setup and generally ignored.
-                    Asterion is a first step into making code analysis more 
-                    approachable.")
+                    Asterion aims to make code analysis more approachable.")
             (dom/p nil "To use the tool, make sure you are pasting a link to a
-                    Github repository, that contains a project.clj file in
+                    Github repository that contains a project.clj file in
                     it's top directory. For example:")
-            (components/link "https://github.com/clojure/clojurescript"
-              "https://github.com/clojure/clojurescript"
-              "file--activate")
+            (components/link "https://github.com/juxt/yada"
+              "https://github.com/juxt/yada" "file--activate")
             (dom/p nil "will work, but "
               (components/link "https://github.com/clojure/clojure"
                 "https://github.com/clojure/clojure")
@@ -353,7 +352,7 @@
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
                   :on-enter (fn [_] (raise! data :nav/draw! nil))
-                  :title "I'll remove the ns with names that match these words"
+                  :title "When you press Enter, I'll remove the ns with names that match these words."
                   :value-key :ns
                   :placeholder "filter out namespaces"}})))))
 
