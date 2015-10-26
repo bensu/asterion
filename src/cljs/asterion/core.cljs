@@ -12,9 +12,8 @@
             [asterion.tree :as tree]
             [asterion.project :as project]
             [asterion.components :as components]
+            [asterion.analytics :refer [repo-event! nav-event!]]
             [asterion.click :as click]))
-
-(enable-console-print!)
 
 ;; ====================================================================== 
 ;; Model
@@ -36,13 +35,12 @@
 ;; ====================================================================== 
 ;; Update
 
-(def form-url
-  "https://docs.google.com/forms/d/19FW2TpxN3FmtJ6drU5N6Ia8g3v_yhr1VuVq5sa74dZ4/viewform")
+
 
 (def ->form
   [(dom/p nil "We couldn't find the repository. ")
    (dom/p nil "Do you want to graph a "
-     (components/link form-url "private repository?" "file--activate"))])
+     (components/forms-link "private repository?"))])
 
 (def error->msg* 
   {:graph/empty-nodes "We found nothing to graph after filtering"
@@ -80,9 +78,11 @@
 
     :project/clear init-state
     
-    :nav/open-help (assoc data :overlay? true)
+    :nav/open-help (do (nav-event! "open-help" nil)
+                       (assoc data :overlay? true))
     
-    :nav/close-help (assoc data :overlay? false)
+    :nav/close-help (do (nav-event! "close-help" nil)
+                        (assoc data :overlay? false))
     
     :nav/graph->buffer (assoc data :buffer msg)
 
@@ -138,6 +138,7 @@
       {:title "Clear Project"
        :icon-class "fa-reply float-right-corner clear-btn"}
       {:opts {:click-fn (fn [_]
+                          (nav-event! "clear-repo" (:url (:project data)))
                           (raise! data :project/clear nil))}})))
 
 (defn error-card [{:keys [error] :as data} owner {:keys [close-fn class]}]
@@ -167,20 +168,24 @@
    "https://github.com/overtone/overtone"
    "https://github.com/juxt/yada"])
 
+
+
 (defn error-handler [data err]
   (raise! data :project/done nil)
-  (raise! data :nav/add-error
-    (try
-      (if (= :timeout (:failure err))
-        :project/timeout
-        (let [res (reader/read-string (:response err))]
-          (if (keyword? (:error res))
-            (:error res)
-            :unknown-error)))
-      (catch :default e
-        :unknown-error))))
+  (let [e (try
+            (if (= :timeout (:failure err))
+              :project/timeout
+              (let [res (reader/read-string (:response err))]
+                (if (keyword? (:error res))
+                  (:error res)
+                  :unknown-error)))
+            (catch :default e
+              :unknown-error))]
+    (repo-event! "receive-error" (clj->js e))
+    (raise! data :nav/add-error e)))
 
 (defn handler [data res]
+  (repo-event! "receive-cached" (:url (:project data)))
   (raise! data :project/done nil)
   (raise! data :graph/add (:graph (reader/read-string res))))
 
@@ -197,9 +202,12 @@
                    (not (re-find #"github" (first tokens))))
           tokens)))))
 
+
+
 (defn start! [data e]
   (raise! data :nav/clear-errors nil)
   (let [url (:url (:project data))]
+    (repo-event! "start" url)
     (if-let [[user repo] (parse-url url)]
       (do
         (raise! data :project/wait nil)
@@ -213,7 +221,9 @@
                  {:handler (partial handler data)
                   :error-handler (partial error-handler data)})
                (error-handler data err)))}))
-      (raise! data :project/invalid-url url))))
+      (do
+        (repo-event! "invalid" url)
+        (raise! data :project/invalid-url url)))))
 
 (defn button [label f]
   (dom/div #js {:className "btn--green"
@@ -351,7 +361,9 @@
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
-                  :on-enter (fn [_] (raise! data :nav/draw! nil))
+                  :on-enter (fn [e]
+                              (nav-event! "filter" (.. e -target -value))
+                              (raise! data :nav/draw! nil))
                   :title "When you press Enter, I'll remove the ns with names that match these words."
                   :value-key :ns
                   :placeholder "filter out namespaces"}})))))
