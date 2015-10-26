@@ -75,7 +75,6 @@
 
 (defroutes app-routes 
   (HEAD "/" [] "")
-  (GET "/" _ (response/file-response "resources/public/index.html"))
   (GET "/repo/:user/:repo" [user repo] 
     (if (and (string? user) (string? repo))
       (repo-handler user repo)
@@ -84,7 +83,16 @@
   (route/files "/")
   (route/not-found "<h1>404 - Page not found</h1>"))
 
-(def app-handler (params/wrap-params app-routes))
+(defn wrap-dir-index [handler]
+  (fn [req]
+    (handler (cond-> req
+               (= :get (:request-method req))
+               (update :uri #(if (= "/" %) "/index.html" %))))))
+
+(def app-handler
+  (-> app-routes
+    params/wrap-params
+    wrap-dir-index))
 
 (defn start-jetty [handler port]
   (jetty/run-jetty handler {:port (Integer. port) :join? false}))
