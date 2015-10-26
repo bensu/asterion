@@ -20,6 +20,8 @@
 
 (def init-state {:nav {:ns ""
                        :highlight "" ;; can be local state
+                       :open? false
+                       :build "dev"
                        :highlighted #{}}
                  :buffer {}
                  :graph {}
@@ -27,6 +29,7 @@
                  :project {:url ""
                            :user nil ;; string 
                            :repo nil ;; string 
+                           :builds ["dev" "production" "test"]
                            :srcs #{} 
                            :platform nil}})
 
@@ -78,6 +81,10 @@
 
     :project/clear init-state
     
+    :nav/new-build (assoc-in data [:nav :build] msg)
+
+    :nav/toggle-builds (update-in data [:nav :open?] not)
+
     :nav/open-help (do (nav-event! "open-help" nil)
                        (assoc data :overlay? true))
     
@@ -337,7 +344,7 @@
 (defn nav-input [data owner {:keys [value-key placeholder title
                                     on-change on-enter]}]
   (om/component
-    (dom/input #js {:className "blue-input"
+    (dom/input #js {:className "top-break blue-input"
                     :type "text"
                     :title title
                     :placeholder placeholder 
@@ -348,6 +355,14 @@
                     :onChange (fn [e]
                                 (on-change (.. e -target -value)))})))
 
+(defn build-item [{:keys [data label]} owner]
+  (om/component
+    (dom/li #js {:onClick (fn [_]
+                            (raise! data :nav/new-build label)
+                            (raise! data :nav/toggle-builds nil))
+                 :className "build-item"} 
+      (dom/span #js {:className "build-name"} label))))
+
 (defn nav [data owner]
   (reify
     om/IRender
@@ -355,7 +370,21 @@
       (dom/div #js {:className "float-box--side blue-box nav"} 
         (if (empty? (:repo (:project data)))
           (dom/h3 #js {:className "blue-box__title"} "Asterion")
-          (dom/h3 #js {:className "project-name"} (:repo (:project data))))
+          (let [build (:build (:nav data))]
+            (dom/div nil
+              (dom/h3 #js {:className "project-name"} (:repo (:project data)))
+              
+              (dom/span #js {:className "build-title build-name"
+                             :onClick (fn [e]
+                                        (raise! data :nav/toggle-builds nil))}
+                build
+                (dom/i #js {:className "menu-icon fa fa-sort-desc"}))
+              (when (:open? (:nav data))
+                (apply dom/ul #js {:className "builds"}
+                  (->> (:builds (:project data))
+                    (remove (partial = build))
+                    (map #(om/build build-item {:data data
+                                                :label %}))))))))
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
