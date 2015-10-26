@@ -50,13 +50,10 @@
                              :cache-analysis true}}
             :production
             {:source-paths ["src/cljs" "env/prod/cljs"]
-             :compiler {:output-to "app/js/p/app.js"
-                        :optimizations :whitespace
+             :compiler {:output-to "resources/public/js/p/app.js"
+                        :optimizations :simple
                         :main "asterion.prod"
-                        :closure-defines {:goog.DEBUG false}
-                        :externs ["node_modules/closurecompiler-externs/path.js"
-                                  "node_modules/closurecompiler-externs/fs.js"
-                                  "externs/misc.js"]}}}}
+                        :closure-defines {:goog.DEBUG false}}}}}
 
   :clean-targets ^{:protect false} [:target-path "out" "resources/public/js/p"]
 
