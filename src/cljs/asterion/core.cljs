@@ -21,7 +21,7 @@
 (def init-state {:nav {:ns ""
                        :highlight "" ;; can be local state
                        :open? false
-                       :build "dev"
+                       :build nil 
                        :highlighted #{}}
                  :buffer {}
                  :graph {}
@@ -29,7 +29,7 @@
                  :project {:url ""
                            :user nil ;; string 
                            :repo nil ;; string 
-                           :builds ["dev" "production" "test"]
+                           :builds []
                            :srcs #{} 
                            :platform nil}})
 
@@ -370,21 +370,22 @@
       (dom/div #js {:className "float-box--side blue-box nav"} 
         (if (empty? (:repo (:project data)))
           (dom/h3 #js {:className "blue-box__title"} "Asterion")
-          (let [build (:build (:nav data))]
-            (dom/div nil
-              (dom/h3 #js {:className "project-name"} (:repo (:project data)))
-              
-              (dom/span #js {:className "build-title build-name"
-                             :onClick (fn [e]
-                                        (raise! data :nav/toggle-builds nil))}
-                build
-                (dom/i #js {:className "menu-icon fa fa-sort-desc"}))
-              (when (:open? (:nav data))
-                (apply dom/ul #js {:className "builds"}
-                  (->> (:builds (:project data))
-                    (remove (partial = build))
-                    (map #(om/build build-item {:data data
-                                                :label %}))))))))
+
+          (dom/div nil
+            (dom/h3 #js {:className "project-name"} (:repo (:project data)))
+            (when-let [build (:build (:nav data))]
+              (dom/div nil
+                (dom/span #js {:className "build-title build-name"
+                               :onClick (fn [e]
+                                          (raise! data :nav/toggle-builds nil))}
+                  build
+                  (dom/i #js {:className "menu-icon fa fa-sort-desc"}))
+                (when (:open? (:nav data))
+                  (apply dom/ul #js {:className "builds"}
+                    (->> (:builds (:project data))
+                      (remove (partial = build))
+                      (map #(om/build build-item {:data data
+                                                  :label %})))))))))
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
