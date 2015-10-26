@@ -11,7 +11,8 @@
             [asterion.deps :as deps]
             [asterion.tree :as tree]
             [asterion.project :as project]
-            [asterion.components :as components]))
+            [asterion.components :as components]
+            [asterion.click :as click]))
 
 (enable-console-print!)
 
@@ -235,33 +236,43 @@
     (dom/div #js {:className "overlay"})))
 
 (defn modal [data owner]
-  (om/component
-    (dom/div #js {:className "center-container"}
-      (dom/div #js {:className "modal blue-box float-box center"}
-        (om/build close-button data)
-        (dom/h1 #js {:className "blue-box__title"} "About")
-        (dom/p nil "Dependency graphs can help you comunicate your programs
+  (reify
+    om/IDidMount
+    (did-mount [_]
+      (om/set-state! owner :listen-click-in
+        (click/install-out! ["about-modal"] #(raise! data :nav/close-help nil))))
+    om/IWillUnmount
+    (will-unmount [_]
+      (click/uninstall! (om/get-state owner :listen-click-in)))
+    om/IRender
+    (render [_]
+      (dom/div #js {:className "modal"}
+        (dom/div #js {:className "page center-container"}
+          (dom/div #js {:className "about-modal float-box blue-box"}
+            (om/build close-button data)
+            (dom/h1 #js {:className "blue-box__title"} "About")
+            (dom/p nil "Dependency graphs can help you comunicate your programs
                     to your teammates, introduce somebody to the codebase,
                     explore changes to the architecture, and help you
                     enforce it during reviews. Code analysis can be "
-          (components/link "https://www.youtube.com/watch?v=hWhBmJJZoNM"
-            "very useful" "file--activate")
-          "but it is inconvienient to setup and generally ignored.
+              (components/link "https://www.youtube.com/watch?v=hWhBmJJZoNM"
+                "very useful" "file--activate")
+              "but it is inconvienient to setup and generally ignored.
                     Asterion is a first step into making code analysis more 
                     approachable.")
-        (dom/p nil "To use the tool, make sure you are pasting a link to a
+            (dom/p nil "To use the tool, make sure you are pasting a link to a
                     Github repository, that contains a project.clj file in
                     it's top directory. For example:")
-        (components/link "https://github.com/clojure/clojurescript"
-          "https://github.com/clojure/clojurescript"
-          "file--activate")
-        (dom/p nil "will work, but "
-          (components/link "https://github.com/clojure/clojure"
-            "https://github.com/clojure/clojure")
-          "won't because it doesn't have a project.clj. ClojureScript and
+            (components/link "https://github.com/clojure/clojurescript"
+              "https://github.com/clojure/clojurescript"
+              "file--activate")
+            (dom/p nil "will work, but "
+              (components/link "https://github.com/clojure/clojure"
+                "https://github.com/clojure/clojure")
+              "won't because it doesn't have a project.clj. ClojureScript and
            Boot projects are not yet supported.")
-        (dom/p nil "If you have any feedback, you can find me at "
-          (components/link "mailto:sbensu@gmail.com" "sbensu@gmail.com" "file--activate"))))))
+            (dom/p nil "If you have any feedback, you can find me at "
+              (components/link "mailto:sbensu@gmail.com" "sbensu@gmail.com" "file--activate"))))))))
 
 (defn select-project [data owner]
   (om/component
