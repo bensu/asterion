@@ -51,7 +51,7 @@
   ([user repo subpath]
    (spit-graph {:user user
                 :repo repo
-                :graph (project/parse-url (->url user repo) subpath)})))
+                :graphs (project/parse-url (->url user repo) subpath)})))
 
 (defn cached
   "Returns a path if the graph for the repo is in cache, otwherwise nil"
@@ -64,18 +64,18 @@
   (try
     (if-let [cache-path (cached user repo)]
       (response/file-response cache-path)
-      (let [graph (project/parse-url (->url user repo))]
-        (if (contains? graph :error)
-          (error-response graph)
+      (let [graphs (project/parse-url (->url user repo))]
+        (if (contains? graphs :error)
+          (error-response graphs)
           (do
-            (future (spit-graph {:user user :repo repo :graph graph}))
-            (ok-response {:graph graph})))))
+            (future (spit-graph {:user user :repo repo :graphs graphs}))
+            (ok-response {:graphs graphs})))))
     (catch Exception e
       (error-response {:error e}))))
 
 (defroutes app-routes 
+  (GET "/" [] (response/file-response "public/index.html"))
   (HEAD "/" [] "")
-  (ANY "/" [] (response/file-response "resources/public/index.html"))
   (GET "/repo/:user/:repo" [user repo] 
     (if (and (string? user) (string? repo))
       (repo-handler user repo)

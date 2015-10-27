@@ -29,15 +29,31 @@
 ;; ====================================================================== 
 ;; Dependency graph 
 
+(defn project->builds
+  "Takes a project map and returns the parsed :cljsbuild config,
+   returns nil if there are none"
+  [project]
+  {:post [(every? string? (keys %)) (every? coll? (vals %))]}
+  (when-let [builds (:builds (:cljsbuild project))]
+    (->> (cond
+           (map? builds) builds 
+           (vector? builds) (map (fn [build] [(:id build) build]) builds)
+           :else (throw (Exception. "Bad cljsbuild options")))
+      (map (fn [[k v]]
+             [(name k) (:source-paths v)]))
+     (into {}))))
+
 (defn parse-project
-  "Takes a File "
+  "Takes a directory and returns the Clojure Sources for it"
   [^File project-dir]
-  (let [f (io/file project-dir "project.clj")]
-    (assert (.exists f) "project.clj not found")
-    (->> (.getPath f)
-      project/read-raw 
-      :source-paths 
-      (mapv (partial io/file project-dir)))))
+  (let [f (io/file project-dir "project.clj")
+        _ (assert (.exists f) "project.clj not found")
+        project (project/read-raw (.getPath f)) ]
+    (->> {"clj" (:source-paths project)}
+      (merge (project->builds project))
+      (map (fn [[k v]]
+             [k (mapv (partial io/file project-dir) v)]))
+      (into {}))))
 
 (defn platform->ext [platform]
   (get {:clj find/clj
@@ -85,7 +101,11 @@
          dir (io/file "tmp" (str (uuid) repo-name))]
      (try
        (git/git-clone-full url (.getPath dir))
-       (depgraph (parse-project (io/file dir subpath)))
+       (->>
+         (parse-project (io/file dir subpath))
+         (map (fn [[id srcs]] 
+                [id (depgraph srcs)]))
+         (into {}))
        (catch java.lang.AssertionError _
          {:error :project/no-project-file})
        (catch InvalidRemoteException _
