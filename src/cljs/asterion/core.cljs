@@ -168,12 +168,18 @@
 ;; ====================================================================== 
 ;; Project Screen 
 
+(def examples-with-path
+  [["https://github.com/bhauman/lein-figwheel" "sidecar"]
+   ["https://github.com/aphyr/jepsen" "jepsen"]
+   ["https://github.com/emezeske/lein-cljsbuild" "support"]])
+
 (def examples
   ["https://github.com/clojure/clojurescript"
    "https://github.com/circleci/frontend"
    "https://github.com/tonsky/datascript"
    "https://github.com/ztellman/manifold"
    "https://github.com/aphyr/riemann"
+   "https://github.com/onyx-platform/onyx"
    "https://github.com/metabase/metabase"
    "https://github.com/Engelberg/instaparse"
    "https://github.com/overtone/overtone"
