@@ -7,6 +7,7 @@
             [ring.adapter.jetty :as jetty]
             [compojure.core :refer :all]
             [compojure.route :as route]
+            [compojure.handler :as handler]
             [asterion.project :as project]))
 
 ;; ====================================================================== 
@@ -75,7 +76,7 @@
 
 (defroutes app-routes 
   (HEAD "/" [] "")
-  (GET "/" [] (response/resource-response "index.html" {:root "public"}))
+  (GET "/" req (response/file-response "resources/public/index.html"))
   (GET "/repo/:user/:repo" [user repo] 
     (if (and (string? user) (string? repo))
       (repo-handler user repo)
@@ -86,7 +87,7 @@
 
 (def app-handler
   (-> app-routes
-    params/wrap-params))
+    handler/site))
 
 (defn start-jetty [handler port]
   (jetty/run-jetty handler {:port (Integer. port) :join? false}))
