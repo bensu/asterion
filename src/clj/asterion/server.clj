@@ -76,7 +76,7 @@
 
 (defroutes app-routes 
   (HEAD "/" [] "")
-  (GET "/" req (response/file-response "resources/public/index.html"))
+  (GET "/" [] (response/redirect "index.html"))
   (GET "/repo/:user/:repo" [user repo] 
     (if (and (string? user) (string? repo))
       (repo-handler user repo)
