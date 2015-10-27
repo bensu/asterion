@@ -104,7 +104,7 @@
        (->>
          (parse-project (io/file dir subpath))
          (map (fn [[id srcs]] 
-                [id (depgraph srcs)]))
+                [id (depgraph (if (= "clj" id) :clj :cljs) srcs)]))
          (into {}))
        (catch java.lang.AssertionError _
          {:error :project/no-project-file})
@@ -112,6 +112,9 @@
          {:error :project/not-found})
        (catch TransportException _
          {:error :project/protected})
+       (catch clojure.lang.ExceptionInfo e
+         (println (:data e))
+         {:error :project/circular-dependency})
        (catch Exception e
          {:error e})
        (finally (future (FileUtils/deleteDirectory dir)))))))

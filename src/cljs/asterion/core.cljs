@@ -24,12 +24,11 @@
                        :build nil 
                        :highlighted #{}}
                  :buffer {}
-                 :graph {}
+                 :graphs []
                  :errors #{}
                  :project {:url ""
                            :user nil ;; string 
                            :repo nil ;; string 
-                           :builds []
                            :srcs #{} 
                            :platform nil}})
 
@@ -37,8 +36,6 @@
 
 ;; ====================================================================== 
 ;; Update
-
-
 
 (def ->form
   [(dom/p nil "We couldn't find the repository. ")
@@ -53,6 +50,7 @@
    :project/timeout "It took too long to talk to the server. We don't know what happened!"
    :project/no-project-file "We couldn't find a project.clj in the repository's top level directory."
    :project/invalid-url "The given url is invalid. Try copy-pasting from the url bar, ex: https://github.com/juxt/yada"
+   :project/circular-dependency "The project contains a circular dependency, probably a cljs file requiring a clj macro file with the same name. This is a bug, we'll fix it soon!"
    :nav/search-error "There was a problem while searching"
    :nav/search-not-found "No matches found"
    :unknown-error "We are truly sorry but we don't know what happened."})
@@ -65,8 +63,9 @@
 (defn update-state [data [tag msg]]
   (case tag
     :graph/add (-> data
-                 (assoc :graph msg)
-                 (update-state [:nav/graph->buffer msg])
+                 (assoc :graphs msg)
+                 (assoc-in [:nav :build] "clj")
+                 (update-state [:nav/graph->buffer (get msg "clj")])
                  (update-state [:nav/draw! nil]))
 
     :project/data (update data :project #(merge % msg))
@@ -81,7 +80,10 @@
 
     :project/clear init-state
     
-    :nav/new-build (assoc-in data [:nav :build] msg)
+    :nav/new-build (-> data 
+                     (assoc-in [:nav :build] msg)
+                     (update-state [:nav/graph->buffer (get (:graphs data) msg)])
+                     (update-state [:nav/draw! nil]))
 
     :nav/toggle-builds (update-in data [:nav :open?] not)
 
@@ -105,7 +107,7 @@
     
     :nav/clear-errors (assoc data :errors #{})
     
-    :nav/draw! (let [g (-> (:graph data)
+    :nav/draw! (let [g (-> (get (:graphs data) (:build (:nav data)))
                          (deps/filter-graph (str/split (:ns (:nav data)) " "))
                          (deps/highlight-graph (:highlighted (:nav data))))]
                  (if (deps/valid-graph? g)
@@ -168,6 +170,7 @@
 
 (def examples
   ["https://github.com/clojure/clojurescript"
+   "https://github.com/tonsky/datascript"
    "https://github.com/ztellman/manifold"
    "https://github.com/aphyr/riemann"
    "https://github.com/metabase/metabase"
@@ -192,7 +195,7 @@
 (defn handler [data res]
   (repo-event! "receive-cached" (:url (:project data)))
   (raise! data :project/done nil)
-  (raise! data :graph/add (:graph (reader/read-string res))))
+  (raise! data :graph/add (:graphs (reader/read-string res))))
 
 ;; TODO: this function does the unexpected when the repo *does*
 ;; contain ".git" in the name!
@@ -373,19 +376,22 @@
 
           (dom/div nil
             (dom/h3 #js {:className "project-name"} (:repo (:project data)))
-            (when-let [build (:build (:nav data))]
-              (dom/div nil
-                (dom/span #js {:className "build-title build-name"
-                               :onClick (fn [e]
-                                          (raise! data :nav/toggle-builds nil))}
-                  build
-                  (dom/i #js {:className "menu-icon fa fa-sort-desc"}))
-                (when (:open? (:nav data))
-                  (apply dom/ul #js {:className "builds"}
-                    (->> (:builds (:project data))
-                      (remove (partial = build))
-                      (map #(om/build build-item {:data data
-                                                  :label %})))))))))
+            (when (< 1 (count (:graphs data)))
+              (when-let [build (:build (:nav data))]
+                (dom/div nil
+                  (dom/span #js {:className "build-title build-name"
+                                 :onClick (fn [e]
+                                            (raise! data :nav/toggle-builds nil))}
+                    (if (:open? (:nav data))
+                      (dom/i #js {:className "menu-icon fa fa-caret-down"})
+                      (dom/i #js {:className "menu-icon fa fa-caret-right"}))
+                    build)
+                  (when (:open? (:nav data))
+                    (apply dom/ul #js {:className "builds"}
+                      (->> (keys (:graphs data))
+                        (remove (partial = build))
+                        (map #(om/build build-item {:data data
+                                                    :label %}))))))))))
         (om/build clear-button data)
         (om/build nav-input (:nav data)
           {:opts {:on-change (partial raise! data :nav/ns)
@@ -441,7 +447,7 @@
 ;; TODO: should be a multimethod
 (defn main [data owner]
   (om/component
-    (if (empty? (:graph data))
+    (if (empty? (:graphs data))
       (om/build select-project data)
       (om/build graph-explorer data))))
 
