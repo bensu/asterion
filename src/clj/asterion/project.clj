@@ -113,7 +113,6 @@
        (catch TransportException _
          {:error :project/protected})
        (catch clojure.lang.ExceptionInfo e
-         (println (:data e))
          {:error :project/circular-dependency})
        (catch Exception e
          {:error e})
