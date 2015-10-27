@@ -170,6 +170,7 @@
 
 (def examples
   ["https://github.com/clojure/clojurescript"
+   "https://github.com/circleci/frontend"
    "https://github.com/tonsky/datascript"
    "https://github.com/ztellman/manifold"
    "https://github.com/aphyr/riemann"
@@ -287,8 +288,8 @@
             (dom/p nil "will work, but "
               (components/link "https://github.com/clojure/clojure"
                 "https://github.com/clojure/clojure")
-              "won't because it doesn't have a project.clj. ClojureScript and
-           Boot projects are not yet supported.")
+              "won't because it doesn't have a project.clj. Boot projects are 
+               not yet supported.")
             (dom/p nil "If you have any feedback, you can find me at "
               (components/link "mailto:sbensu@gmail.com" "sbensu@gmail.com" "file--activate"))))))))
 
