@@ -10,6 +10,7 @@
                  [org.clojure/clojurescript "1.7.145"]
                  [org.clojure/tools.namespace "0.3.19-SNAPSHOT"]
                  [org.clojure/tools.reader "0.10.0-alpha1"]
+                 [org.clojure/data.json "0.2.6"]
                  [commons-io/commons-io "2.4"]
                  [environ "1.0.1"]
                  [com.stuartsierra/component "0.2.3"]

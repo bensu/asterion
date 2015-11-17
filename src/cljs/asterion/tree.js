@@ -23,13 +23,18 @@ asterion.tree.formatNs = function(s) {
     return s.split(".").join("\n");
 };
 
-asterion.tree.colors = new asterion.ring.Ring(palette('tol-rainbow',12).reverse()); 
+asterion.tree.colors = new asterion.ring.Ring(palette('tol-rainbow',12).reverse());
 
 asterion.tree.groupToColor = asterion.ring.memoize(asterion.tree.colors);
 
 asterion.tree.nodeToGroup = function(name) {
-    // TODO: looking at the second token works for libraries, not for apps 
-    return name.split("\.")[1].replace("-","");
+    // TODO: looking at the second token works for libraries, not for apps
+    var parts = name.split("\.");
+    if (parts.length > 1) {
+        return parts[1].replace("-","");
+    } else {
+        return name;
+    }
 };
 
 asterion.tree.nodeToSubGroup = function(name) {
@@ -39,30 +44,32 @@ asterion.tree.nodeToSubGroup = function(name) {
 
 asterion.tree.Graph = function(json) {
    var config = asterion.tree.config();
-   var g = new dagreD3.graphlib.Graph().setGraph({}); 
+   var g = new dagreD3.graphlib.Graph().setGraph({});
 
    json.nodes.forEach(function(node) {
        var group = asterion.tree.nodeToGroup(node.name);
-       var color = asterion.tree.groupToColor(group); 
+       var color = asterion.tree.groupToColor(group);
        var hgStyle = "";
        var labelStyle = "";
        if (node.highlight) {
            labelStyle = "fill:#f0f1eb";
            hgStyle = "fill:black;";
-       } 
+       }
        g.setNode(node.name, {
            label: node.name,
-           labelStyle: labelStyle, 
+           labelStyle: labelStyle,
            style: "fill:#" + color + ";stroke:black;" + hgStyle});
        });
-       
+
    json.edges.forEach(function(edge) {
        g.setEdge(edge.source, edge.target,{});
    });
    g.nodes().forEach(function(v) {
       var node = g.node(v);
-      node.rx = config.rx;
-      node.ry = config.ry;
+      if (typeof node !== 'undefined') {
+          node.rx = config.rx;
+          node.ry = config.ry;
+      }
    });
    return g;
 };

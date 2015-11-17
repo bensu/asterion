@@ -15,26 +15,26 @@
             [asterion.analytics :refer [repo-event! nav-event!]]
             [asterion.click :as click]))
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Model
 
 (def init-state {:nav {:ns ""
                        :highlight "" ;; can be local state
                        :open? false
-                       :build nil 
+                       :build nil
                        :highlighted #{}}
                  :buffer {}
                  :graphs []
                  :errors #{}
                  :project {:url ""
-                           :user nil ;; string 
-                           :repo nil ;; string 
-                           :srcs #{} 
+                           :user nil ;; string
+                           :repo nil ;; string
+                           :srcs #{}
                            :platform nil}})
 
 (defonce app-state (atom init-state))
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Update
 
 (def ->form
@@ -42,11 +42,11 @@
    (dom/p nil "Do you want to graph a "
      (components/forms-link "private repository?"))])
 
-(def error->msg* 
+(def error->msg*
   {:graph/empty-nodes "We found nothing to graph after filtering"
    :project/parse-error "We couldn't read your project.clj"
    :project/not-found "We couldn't find the repository"
-   :project/protected ->form  
+   :project/protected ->form
    :project/timeout "It took too long to talk to the server. We don't know what happened!"
    :project/no-project-file "We couldn't find a project.clj in the repository's top level directory."
    :project/invalid-url "The given url is invalid. Try copy-pasting from the url bar, ex: https://github.com/juxt/yada"
@@ -62,25 +62,26 @@
 
 (defn update-state [data [tag msg]]
   (case tag
-    :graph/add (-> data
-                 (assoc :graphs msg)
-                 (assoc-in [:nav :build] "clj")
-                 (update-state [:nav/graph->buffer (get msg "clj")])
-                 (update-state [:nav/draw! nil]))
+    :graph/add (let [build-id (or (first (keys msg)) "clj")]
+                 (-> data
+                   (assoc :graphs msg)
+                   (assoc-in [:nav :build] build-id)
+                   (update-state [:nav/graph->buffer (get msg build-id)])
+                   (update-state [:nav/draw! nil])))
 
     :project/data (update data :project #(merge % msg))
 
     :project/url (assoc-in data [:project :url] msg)
-    
+
     :project/wait (assoc data :waiting? true)
-    
+
     :project/done (assoc data :waiting? false)
-    
+
     :project/invalid-url (update data :errors #(conj % :project/invalid-url))
 
     :project/clear init-state
-    
-    :nav/new-build (-> data 
+
+    :nav/new-build (-> data
                      (assoc-in [:nav :build] msg)
                      (update-state [:nav/graph->buffer (get (:graphs data) msg)])
                      (update-state [:nav/draw! nil]))
@@ -89,32 +90,32 @@
 
     :nav/open-help (do (nav-event! "open-help" nil)
                        (assoc data :overlay? true))
-    
+
     :nav/close-help (do (nav-event! "close-help" nil)
                         (assoc data :overlay? false))
-    
+
     :nav/graph->buffer (assoc data :buffer msg)
 
     :nav/ns (assoc-in data [:nav :ns] msg)
-    
+
     :nav/highlight (assoc-in data [:nav :highlight] msg)
-    
+
     :nav/clear-highlighted (-> data
                              (assoc-in [:nav :highlighted] #{})
                              (update-state [:nav/draw! nil]))
-    
+
     :nav/add-error (update data :errors #(conj % msg))
-    
+
     :nav/clear-errors (assoc data :errors #{})
-    
+
     :nav/draw! (let [g (-> (get (:graphs data) (:build (:nav data)))
                          (deps/filter-graph (str/split (:ns (:nav data)) " "))
                          (deps/highlight-graph (:highlighted (:nav data))))]
                  (if (deps/valid-graph? g)
                    (update-state data [:nav/graph->buffer g])
                    (update-state data [:nav/add-error :graph/empty-nodes])))
-    
-    ;; If action is unknonw, return data unchanged 
+
+    ;; If action is unknonw, return data unchanged
     data))
 
 ;; TODO: support raising several events sequentially
@@ -122,7 +123,7 @@
   {:pre [(keyword? tag) (om/cursor? data)]}
   (om/transact! data #(update-state % [tag msg])))
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Sources Screen
 
 (defn help-button [data owner]
@@ -165,8 +166,8 @@
         :else (apply dom/div nil (:msg error))))))
 
 
-;; ====================================================================== 
-;; Project Screen 
+;; ======================================================================
+;; Project Screen
 
 (def examples-with-path
   [["https://github.com/bhauman/lein-figwheel" "sidecar"]
@@ -225,10 +226,10 @@
       (do
         (raise! data :project/wait nil)
         (raise! data :project/data {:user user :repo repo})
-        (GET (str "/cached/" user "/" repo ".edn") 
-          {:handler (partial handler data) 
+        (GET (str "/cached/" user "/" repo ".edn")
+          {:handler (partial handler data)
            :error-handler
-           (fn [err] 
+           (fn [err]
              (if (= 404 (:status err))
                (GET (str "/repo/" user "/" repo)
                  {:handler (partial handler data)
@@ -251,7 +252,7 @@
 
 (defn example-link [link owner]
   (om/component
-    (dom/li #js {:className "file-item"} 
+    (dom/li #js {:className "file-item"}
       (components/link link))))
 
 (defn overlay [data owner]
@@ -275,7 +276,7 @@
           (dom/div #js {:className "about-modal float-box blue-box"}
             (om/build close-button data)
             (dom/h1 #js {:className "blue-box__title"} "About")
-            (dom/p nil "Dependency graphs can help you comunicate 
+            (dom/p nil "Dependency graphs can help you comunicate
                     with your teammates, introduce people to the codebase,
                     explore changes to the architecture, and help you
                     enforce it during reviews.")
@@ -294,7 +295,7 @@
             (dom/p nil "will work, but "
               (components/link "https://github.com/clojure/clojure"
                 "https://github.com/clojure/clojure")
-              "won't because it doesn't have a project.clj. Boot projects are 
+              "won't because it doesn't have a project.clj. Boot projects are
                not yet supported.")
             (dom/p nil "If you have any feedback, you can find me at "
               (components/link "mailto:sbensu@gmail.com" "sbensu@gmail.com" "file--activate"))))))))
@@ -310,7 +311,7 @@
       (when-not (empty? (:errors data))
         (om/build error-card
           (assoc data
-            :error {:title "Error" 
+            :error {:title "Error"
                     :msg (error->msg (first (:errors data)))})
           {:opts {:class "float-box error-card center"
                   :close-fn (fn [_]
@@ -322,7 +323,7 @@
             (dom/p nil (str "Processing " (or (project-name data) "...")))
             (dom/div #js {:className "loader"})
             (dom/p nil "Try other cool projects:")
-            (apply dom/ul #js {:className "folder-list"} 
+            (apply dom/ul #js {:className "folder-list"}
               (->> examples
                 (remove (partial = (:url (:project data))))
                 shuffle
@@ -348,7 +349,7 @@
             (dom/div #js {:className "center-container"}
               (button "Graph" (partial start! data)))))))))
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Graph Screen
 
 (defn nav-input [data owner {:keys [value-key placeholder title
@@ -357,7 +358,7 @@
     (dom/input #js {:className "top-break blue-input"
                     :type "text"
                     :title title
-                    :placeholder placeholder 
+                    :placeholder placeholder
                     :value (get data value-key)
                     :onKeyDown (fn [e]
                                  (when (= "Enter" (.-key e))
@@ -370,14 +371,14 @@
     (dom/li #js {:onClick (fn [_]
                             (raise! data :nav/new-build label)
                             (raise! data :nav/toggle-builds nil))
-                 :className "build-item"} 
+                 :className "build-item"}
       (dom/span #js {:className "build-name"} label))))
 
 (defn nav [data owner]
   (reify
     om/IRender
     (render [_]
-      (dom/div #js {:className "float-box--side blue-box nav"} 
+      (dom/div #js {:className "float-box--side blue-box nav"}
         (if (empty? (:repo (:project data)))
           (dom/h3 #js {:className "blue-box__title"} "Asterion")
 
@@ -436,19 +437,19 @@
   (reify
     om/IRender
     (render [_]
-      (dom/div #js {:className "page"} 
+      (dom/div #js {:className "page"}
         (om/build nav data)
         (when-not (empty? (:errors data))
           (om/build error-card
             (assoc data
-              :error {:title "Error" 
+              :error {:title "Error"
                       :msg (error->msg (first (:errors data)))})
             {:opts {:class "notification float-box error-card"
                     :close-fn (fn [_]
                                 (raise! data :nav/clear-errors nil))}}))
         (om/build graph (:buffer data))))))
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Component Dispatcher
 
 ;; TODO: should be a multimethod
