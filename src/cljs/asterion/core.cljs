@@ -47,6 +47,7 @@
    :project/parse-error "We couldn't read your project.clj"
    :project/not-found "We couldn't find the repository"
    :project/protected ->form
+   :project/cant-find-sources "We couldn't find your package.json/project.clj"
    :project/timeout "It took too long to talk to the server. We don't know what happened!"
    :project/no-project-file "We couldn't find a project.clj in the repository's top level directory."
    :project/invalid-url "The given url is invalid. Try copy-pasting from the url bar, ex: https://github.com/juxt/yada"

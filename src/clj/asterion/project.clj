@@ -25,7 +25,7 @@
 
 (defmulti parse-repo project-type)
 
-(defmethod parse-repo :default [_ _] {:error :project/not-found})
+(defmethod parse-repo :default [_ _] {:error :project/cant-find-sources})
 
 (defmethod parse-repo :clj
   [dir subpath]
