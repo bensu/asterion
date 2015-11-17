@@ -19,7 +19,7 @@
                  [compojure "1.4.0"]
                  [cljsjs/d3 "3.5.5-3"]
                  [org.omcljs/om "0.9.0"]
-                 [cljs-ajax "0.5.0"]]  
+                 [cljs-ajax "0.5.0"]]
 
   :min-lein-version "2.5.1"
 
@@ -30,17 +30,6 @@
                   :figwheel {:on-jsload "asterion.core/init!"}
                   :compiler {:output-to "resources/public/js/p/app.js"
                              :output-dir "resources/public/js/p/out"
-                             :asset-path "js/p/out"
-                             :source-map true
-                             :main "asterion.dev"
-                             :verbose true
-                             :optimizations :none
-                             :pretty-print  true
-                             :cache-analysis true}}
-            :app {:source-paths ["src/cljs" "env/dev/cljs"]
-                  :figwheel {:on-jsload "asterion.core/init!"}
-                  :compiler {:output-to "app/js/p/app.js"
-                             :output-dir "app/js/p/out"
                              :asset-path "js/p/out"
                              :source-map true
                              :main "asterion.dev"

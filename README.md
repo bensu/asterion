@@ -70,14 +70,6 @@ This will give better readline support.
 More about [figwheel](https://github.com/bhauman/lein-figwheel) here.
 
 
-In another terminal window, launch the electron app:
-
-```
-grunt launch
-```
-
-You can edit the `src/cljs/draft/core.cljs` file and the changes should show up in the electron app without the need to re-launch.
-
 ### Dependencies
 
 Node dependencies are in `package.json` file. Bower dependencies are in `bower.json` file. Clojure/ClojureScript dependencies are in `project.clj`.
