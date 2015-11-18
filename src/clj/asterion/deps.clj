@@ -1,4 +1,4 @@
-(ns asterion.project
+(ns asterion.deps
   (:import [java.util UUID]
            [org.apache.commons.io FileUtils]
            [org.eclipse.jgit.api.errors InvalidRemoteException]

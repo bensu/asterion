@@ -8,9 +8,9 @@
             [compojure.core :refer :all]
             [compojure.route :as route]
             [compojure.handler :as handler]
-            [asterion.project :as project]))
+            [asterion.deps :as deps]))
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Utils
 
 (defn ->url [user repo]
@@ -26,7 +26,7 @@
    :headers {"Content-Type" "application/edn"}
    :body (pr-str body)})
 
-;; ====================================================================== 
+;; ======================================================================
 ;; Cache
 
 (def cache-root "cached")
@@ -40,7 +40,7 @@
   {:pre [(every? some? (vals data))]}
   (let [p (str "resources/public/" (cache-path user repo))
         parent (.getParentFile (io/file p))]
-    ;; ensure directory 
+    ;; ensure directory
     (when-not (.exists parent)
       (.mkdirs parent))
     (spit p data)
@@ -52,7 +52,7 @@
   ([user repo subpath]
    (spit-graph {:user user
                 :repo repo
-                :graphs (project/parse-url (->url user repo) subpath)})))
+                :graphs (deps/parse-url (->url user repo) subpath)})))
 
 (defn cached
   "Returns a path if the graph for the repo is in cache, otwherwise nil"
@@ -65,7 +65,7 @@
   (try
     (if-let [cache-path (cached user repo)]
       (response/file-response cache-path)
-      (let [graphs (project/parse-url (->url user repo))]
+      (let [graphs (deps/parse-url (->url user repo))]
         (if (contains? graphs :error)
           (error-response graphs)
           (do
@@ -74,10 +74,10 @@
     (catch Exception e
       (error-response {:error e}))))
 
-(defroutes app-routes 
+(defroutes app-routes
   (HEAD "/" [] "")
   (GET "/" [] (response/redirect "index.html"))
-  (GET "/repo/:user/:repo" [user repo] 
+  (GET "/repo/:user/:repo" [user repo]
     (if (and (string? user) (string? repo))
       (repo-handler user repo)
       (error-response (str "Bad params: " user repo))))
@@ -99,7 +99,7 @@
     (assoc component :jetty (start-jetty app-handler port)))
   (stop [component]
     (println "Stop server")
-    (when jetty 
+    (when jetty
       (.stop jetty))
     component))
 
